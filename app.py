@@ -59,6 +59,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 engine = conn._engine
 # session = Session(engine)
+conn = st.connection("sql", url=DATABASE_URL)
+engine = conn._engine
 db_session = Session(engine)
 
 
@@ -1367,7 +1369,7 @@ elif sidebar_selection == "📏 Saved Measurements Ledger":
     # 🔥 LIVE QUERY VIEPORT GATE: RENDERS ALL SAVED RECORDS TO THE SCREEN 🔥
     # -------------------------------------------------------------------------
     st.markdown("### 🖼️ Live Studio Specification Records")
-    live_studio()
+    live_studio(db_session)
 
     # =========================================================================
     # 🧵 CONTINUATION CORE: RELATIONAL DATA LOOP & PURGE MECHANICS (INDEX4.PY) 🧵
@@ -4383,7 +4385,7 @@ if (
             key="lifecycle_add_to_collection_cta",
             use_container_width=True,
         ):
-            collection_button(garment_cut, token_studio_name, token_user_email)
+            collection_button(garment_cut, token_studio_name, token_user_email, db_session)
 
     with col_life2:
         # ACTION 3: Push directly down to your dynamic commercial storefront engine
@@ -4398,7 +4400,7 @@ if (
             ):
 
                 push_to_studio(
-                    garment_cut, token_user_id, token_studio_name, token_user_email
+                    garment_cut, token_user_id, token_studio_name, token_user_email,db_session
                 )
 
     # --- RENDER MEASUREMENT WORKBOOK CONTAINER ---
