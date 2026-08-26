@@ -1,0 +1,15 @@
+# Streamlit secrets (Crucial! Keeps your Supabase & Paystack keys safe)
+.streamlit/secrets.toml
+
+# Python virtual environments (if you created one locally)
+venv/
+.venv/
+env/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Operating system files
+.DS_Store
+Thumbs.db
