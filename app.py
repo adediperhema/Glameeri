@@ -58,11 +58,14 @@ from typing import Any, cast
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# session = Session(engine)
+# 1. Initialize the Streamlit SQL connection wrapper first
 conn = st.connection("sql", url=DATABASE_URL)
-engine = conn._engine
-db_session = Session(engine)
 
+# 2. Extract the raw SQLAlchemy engine correctly (No leading underscore!)
+engine = conn.engine
+
+# 3. Spin up your traditional ORM session object using the engine
+db_session = Session(engine)
 
 # Put this in a hidden admin section or at the very bottom of your app during setup
 # if st.button("Dev Tools: Sync Database Tables"):
