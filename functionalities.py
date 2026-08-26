@@ -38,7 +38,7 @@ from typing import Any, cast
 
 #engine = conn._engine
 # session = Session(engine)F
-db_session = Session(engine)
+#db_session = Session(engine)
 
 
 def bootstrap_silhouette_assets():
