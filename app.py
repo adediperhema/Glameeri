@@ -57,7 +57,7 @@ from typing import Any, cast
 # Configure system logging parameters
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-engine = conn._engine
+
 # session = Session(engine)
 conn = st.connection("sql", url=DATABASE_URL)
 engine = conn._engine
