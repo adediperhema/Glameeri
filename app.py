@@ -59,7 +59,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 1. Initialize the Streamlit SQL connection wrapper first
-conn = st.connection("sql", url=DATABASE_URL)
+#conn = st.connection("sql", url=DATABASE_URL)
 
 # 2. Extract the raw SQLAlchemy engine correctly (No leading underscore!)
 engine = conn.engine
