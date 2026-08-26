@@ -348,7 +348,7 @@ def render_pricing_matrix_panel(user_authenticated: bool, active_tier_str: str) 
     st.markdown(pricing_html_payload, unsafe_allow_html=True)
 
 
-def push_to_studio(garment_cut, token_user_id, token_studio_name, token_user_email):
+def push_to_studio(garment_cut, token_user_id, token_studio_name, token_user_email,db_session):
     generated_title = f"Design - {str(garment_cut).capitalize()}"
     inferred_origin = "Clothing"
     runtime_notes = "A modern customized apparel cut. Ready for retail distribution."
@@ -435,7 +435,7 @@ def push_to_studio(garment_cut, token_user_id, token_studio_name, token_user_ema
         db_session.close()
 
 
-def collection_button(garment_cut, token_studio_name, token_user_email):
+def collection_button(garment_cut, token_studio_name, token_user_email, db_session):
     generated_parent_id = 0
     user_session_id_val = st.session_state.get("user_session_id", 0)
     # db_session = SessionLocal()
@@ -717,7 +717,7 @@ def open_client(garment_cut):
         db_session.close()
 
 
-def live_studio():
+def live_studio(db_session):
     # db_read = SessionLocal()
     try:
         from database import ClientSpecification
