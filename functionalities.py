@@ -36,8 +36,8 @@ import logging
 # Safe production casting pattern
 from typing import Any, cast
 
-engine = conn._engine
-# session = Session(engine)
+#engine = conn._engine
+# session = Session(engine)F
 db_session = Session(engine)
 
 
@@ -352,7 +352,7 @@ def push_to_studio(garment_cut, token_user_id, token_studio_name, token_user_ema
     generated_title = f"Design - {str(garment_cut).capitalize()}"
     inferred_origin = "Clothing"
     runtime_notes = "A modern customized apparel cut. Ready for retail distribution."
-
+    #db_session = Session(engine)
     # db = SessionLocal()
     try:
         # 🔥 Dynamic inline injection bypasses top-level red imports completely
