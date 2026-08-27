@@ -866,7 +866,7 @@ if sidebar_selection == "📁 Fabric Collection Manager":
             # ---------------------------------------------------------------------
         # 🚀 NEW NAVIGATION BUTTON: LINKS DYNAMICALLY TO THE PORTFOLIO PAGE 🚀
         # ---------------------------------------------------------------------
-   if st.button(
+if st.button(
         "👁️ View Onboarded Assets inside Lookbook Portfolio ➔", 
         key="fabric_manager_to_portfolio_redirect_cta",
         type="secondary",
