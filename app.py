@@ -2943,7 +2943,7 @@ elif st.session_state.get("app_view") == "is_logged_in":
                             st.session_state["app_view"] = "studio"
 
                             st.success(
-                                "🎉 Authorization signature verified via JWT! Launching canvas..."
+                                "🎉 You are successfully logging in!"
                             )
                             db_session.close()
                             time.sleep(0.5)
