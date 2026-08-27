@@ -1380,12 +1380,7 @@ elif sidebar_selection == "📏 Saved Measurements Ledger":
 
 # 📊 COMMERCIAL STOREFRONT REVENUE LEDGER & METRICS ENGINE
 # =========================================================================
-elif (
-    # st.session_state.get("authenticated") == True
-    # and
-    sidebar_selection
-    == "📊 Analytical Orders Ledger"
-):
+elif sidebar_selection == "📊 Analytical Orders Ledger":
     ##############
 
     # 1. Establish the precise filesystem track path pointing to your local logo file
@@ -1402,7 +1397,7 @@ elif (
 
                 encoded_logo_b64 = base64.b64encode(logo_bytes_file.read())
 
-                # 🔥 FIX: Match the exact name used on BOTH lines to clear the red text error!
+                # Match the exact name used on BOTH lines to clear the red text error!
                 clean_logo_b64_string = (
                     encoded_logo_b64.decode("utf-8").replace("\n", "").replace("\r", "")
                 )
@@ -1412,8 +1407,7 @@ elif (
         except Exception:
             pass
 
-        # 3. 🔥 COMPRESS THE NAVBAR PAYLOAD INSIDE PARENTHESES TO ERASE RAW CODE TEXT GATES 🔥
-        # Alternating to double quotes (") on the outside and single quotes (') on the inside clears all syntax error crashes!
+        # 3. COMPRESS THE NAVBAR PAYLOAD INSIDE PARENTHESES TO ERASE RAW CODE TEXT GATES
         navbar_branding_html_payload = (
             "<style>"
             "  .vk-navbar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; padding: 14px 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: sans-serif; }"
@@ -1429,18 +1423,61 @@ elif (
             "</div>"
         )
 
-        # "       <span class='brand-title'>AfriTextile</span>"
-        # style="width: 500px; height: 600px;"
         # Force the markdown engine to interpret the payload as native web node parameters
         st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
 
     ##############
 
-    from seller_dashboard import render_seller_dashboard_suite
-
+    # 4. 🔥 NEW: EXTRACT PROFILE PICTURE AND INFORMATION MATRICES FROM POSTGRESQL 🔥
+    # Query user row indices to pull brand information to pass to the marketplace
+    from database import User
+    from typing import Any, cast
+    
     token_user_id = st.session_state.get("user_session_id", 0)
-    # db = SessionLocal()
+    
+    # Secure user database row configurations via active session context lines
+    db_user_row = db_session.query(User).filter(User.id == token_user_id).first()
+    safe_user = cast(Any, db_user_row)
+    
+    # Assign verified string values using default fallbacks to prevent empty null pointer crashes
+    merchant_studio_name = str(getattr(safe_user, "studio_name", "AfriTextile Artisan Label"))
+    merchant_biography = str(getattr(safe_user, "biography", "No public studio overview logged yet."))
+    merchant_profile_img = str(getattr(safe_user, "profile_picture_name", "default_profile.png"))
+    
+    # 5. 🔥 RENDER DYNAMIC PUBLIC STOREFRONT PREVIEW CONTAINER 🔥
+    st.markdown('<div style="background-color:#f8fafc; border:1px solid #e2e8f0; padding:15px; border-radius:12px; margin-bottom:20px; font-family:sans-serif;">', unsafe_allow_html=True)
+    st.markdown("<h4 style='margin-top:0; color:#4a5568;'>🌐 Global Storefront Identity Sync Tracker</h4>", unsafe_allow_html=True)
+    
+    prof_col1, prof_col2 = st.columns([1, 4])
+    with prof_col1:
+        # Resolve path pointing to merchant avatar snapshot image file
+        avatar_disk_path = os.path.join("images", merchant_profile_img)
+        if os.path.exists(avatar_disk_path):
+            st.image(avatar_disk_path, use_container_width=True)
+        else:
+            # High-fashion default replacement icon
+            st.image("https://unsplash.com", use_container_width=True)
+            
+    with prof_col2:
+        st.markdown(f"##### 🏷️ Brand Label: **{merchant_studio_name}**")
+        st.write(f"*{merchant_biography}*")
+        
+        # Action toggle binds the profile parameters cleanly into public storefront lookups
+        include_profile_flag = st.checkbox(
+            "🚀 Broadcast brand profile picture and biography metrics directly onto live marketplace product grids",
+            value=st.session_state.get("step3_broadcast_profile_parameters", True),
+            key="step3_marketplace_broadcast_profile_checkbox"
+        )
+        st.session_state["step3_broadcast_profile_parameters"] = include_profile_flag
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 6. LAUNCH COMPREHENSIVE SELLER DASHBOARD UTILITIES MODULE
+    from seller_dashboard import render_seller_dashboard_suite
+    
+    # Invoke the dashboard suite, streaming structural parameters natively
     render_seller_dashboard_suite(db_session, token_user_id)
+    
     db_session.close()
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
