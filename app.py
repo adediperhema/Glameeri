@@ -570,149 +570,45 @@ else:
 if sidebar_selection == "👤 Edit Studio Profile":
     ##############
 
-    # 1. Establish the precise filesystem track path pointing to your local logo file
-    local_logo_disk_path = os.path.join("images", "fashion_logo1_nobg.png")
-
-    # Authoritative high-fashion fallback image link deployed if your local disk asset is missing
-    navbar_logo_render_url = "https://unsplash.com"
-
-    # 2. Pull image bytes and convert to a clean single-line Base64 format to bypass cross-origin blocks
-    if os.path.exists(local_logo_disk_path):
-        try:
-            with open(local_logo_disk_path, "rb") as logo_bytes_file:
-                import base64
-
-                encoded_logo_b64 = base64.b64encode(logo_bytes_file.read())
-
-                # 🔥 FIX: Match the exact name used on BOTH lines to clear the red text error!
-                clean_logo_b64_string = (
-                    encoded_logo_b64.decode("utf-8").replace("\n", "").replace("\r", "")
-                )
-                navbar_logo_render_url = (
-                    f"data:image/jpeg;base64,{clean_logo_b64_string}"
-                )
-        except Exception:
-            pass
-
-        # 3. 🔥 COMPRESS THE NAVBAR PAYLOAD INSIDE PARENTHESES TO ERASE RAW CODE TEXT GATES 🔥
-        # Alternating to double quotes (") on the outside and single quotes (') on the inside clears all syntax error crashes!
-        navbar_branding_html_payload = (
-            "<style>"
-            "  .vk-navbar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; padding: 14px 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: sans-serif; }"
-            "  .vk-navbar-logo-img { width: auto; max-height: 60px; object-fit: contain; border-radius: 6px; }"
-            "  .brand-text-wrapper { flex-grow: 1; text-align: center; margin-right: 60px; }"
-            "  .brand-tagline { font-size: 16px; font-weight: 600; color: #E05A47; text-transform: uppercase; letter-spacing: 1px; }"
-            "</style>"
-            "<div class='vk-navbar'>"
-            f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='AfriTextile Core Branding Logo'/>"
-            "   <div class='brand-text-wrapper'>"
-            "       <span class='brand-tagline'>AI Fashion innovation Studio</span>"
-            "   </div>"
-            "</div>"
-        )
-
-        # "       <span class='brand-title'>AfriTextile</span>"
-        # style="width: 500px; height: 600px;"
-        # Force the markdown engine to interpret the payload as native web node parameters
-        st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
-
-    ##############
-    st.markdown('<div class="vk-card">', unsafe_allow_html=True)
-    st.markdown(
-        '<p class="vk-section-header">👤 User Profile Settings & Atelier Customization</p>',
-        unsafe_allow_html=True,
-    )
-
-    # Extract the user's primary key token from active Streamlit memory loops
-    session_id = st.session_state.get("user_session_id")
-    if session_id:
-        # db = SessionLocal()
-        # Query the database dynamically for the single user matching this session ID
-        current_user = db_session.query(User).filter(User.id == session_id).first()
-
-        # =========================================================================
-        # 🧵 FIX: COMPLETE TYPE-SAFE PROFILE PATH CHECK (NO RED LINES) 🧵
-        # =========================================================================
-
-        if current_user:
-            col_p1, col_p2 = st.columns(2)
-            with col_p1:
-                # 1. FIX: Pull properties using getattr and force-cast to an explicit string
-                # This tells the linter exactly what data type to track, clearing all red underlines instantly!
-                active_avatar_filename: str = str(
-                    getattr(current_user, "profile_picture_name", "default_profile.png")
-                )
-
-                # 2. Build the secure file path trace using your linter-proof string variable
-                pfp_path = os.path.join("profile_pics", active_avatar_filename)
-
-                # 3. Verify file assets cleanly on the local workstation disk drive
-                # The red outlines disappear completely because we are no longer calling attributes directly on current_user!
-                if (
-                    os.path.exists(pfp_path)
-                    and active_avatar_filename != "default_profile.png"
-                ):
-                    st.image(
-                        pfp_path,
-                        caption=f"Active Avatar: {active_avatar_filename}",
-                        use_container_width=True,
-                    )
-                else:
-                    st.image(
-                        "https://unsplash.com",
-                        caption="Default System Avatar",
-                        use_container_width=True,
-                    )
-
-            with col_p2:
-                st.markdown(f"##### **Workspace ID Account:** `{current_user.email}`")
-                st.markdown(
-                    f"🎨 **Current Atelier Identity:** `{current_user.studio_name}`"
-                )
-                st.caption(
-                    f"📅 Registered Account Creation Timestamp: {current_user.created_at.strftime('%B %Y')}"
-                )
-
-            st.markdown(
-                "<hr style='border:0; border-top: 1px dashed #dadce0; margin: 20px 0;'/>",
-                unsafe_allow_html=True,
-            )
-
             # THE EDITABLE ACCOUNT FORM DATA MATRIX SECTION
             st.markdown("### 📝 Modify Account Details")
+            
+            # FIX 1: We use a SINGLE cohesive form block for both the inputs and the submit button
             with st.form("edit_profile_form_matrix"):
-                # Forms pre-load current PostgreSQL column values inside input text fields cleanly
+                
+                # FIX 2: Added explicit 'key' strings that match exactly what your submission logic looks for!
                 edit_studio_name = st.text_input(
                     "Edit Studio / Atelier Display Title Name:",
                     value=current_user.studio_name,
+                    key="profile_edit_field_name"  # <-- Critical Key
                 )
+                
                 edit_biography = st.text_area(
                     "Edit Studio Biography / Specialization Profile Log:",
                     value=current_user.biography,
+                    key="profile_edit_field_bio"   # <-- Critical Key
                 )
+                
                 update_pfp = st.file_uploader(
                     "Replace Profile Picture File Asset (Optional):",
                     type=["png", "jpg", "jpeg"],
                 )
 
-                # =========================================================================
-        # 🪡 FIX 1: TYPE-SAFE STUDIO DATA MODIFICATION LAYER (NO RED STRIP) 🪡
-        # =========================================================================
-        with st.form("💾 Save Profile Data Changes"):
-            if st.form_submit_button("💾 Save Profile Data Changes"):
-                clean_edit_name = str(
-                    st.session_state.get("profile_edit_field_name", "")
-                ).strip()
-                clean_edit_bio = str(
-                    st.session_state.get("profile_edit_field_bio", "")
-                ).strip()
+                # Place the submit button cleanly inside the single form container
+                submit_button = st.form_submit_button("💾 Save Profile Data Changes")
+
+            # =========================================================================
+            # 🪡 FIX 3: RESTRUCTURED LOGIC TRIGGER (RUNS ON SUBMIT) 🪡
+            # =========================================================================
+            if submit_button:
+                # Grab the cleaned values directly from session state variables now that the keys match
+                clean_edit_name = str(st.session_state.get("profile_edit_field_name", "")).strip()
+                clean_edit_bio = str(st.session_state.get("profile_edit_field_bio", "")).strip()
 
                 if not clean_edit_name:
                     st.error("❌ Alteration Denied: Studio Name cannot be empty.")
                 else:
-                    # db_session = SessionLocal()
                     try:
-                        # Fetch active profile entity matching the authenticated session user
                         active_user_id = st.session_state.get("user_session_id", 0)
                         db_user = (
                             db_session.query(User)
@@ -721,27 +617,29 @@ if sidebar_selection == "👤 Edit Studio Profile":
                         )
 
                         if db_user:
-                            # 🔥 FIX: Using setattr removes abstract column type-tracing bugs entirely!
-                            # The red marks vanish because strings are read completely clear of ORM footprints.
+                            # 1. Update text attributes using type-safe setattr patterns
                             setattr(db_user, "studio_name", clean_edit_name)
                             setattr(db_user, "biography", clean_edit_bio)
 
+                            # 2. OPTIONAL: Handle Avatar Upload directly into our persistent Base64 string row!
+                            if update_pfp is not None:
+                                import base64
+                                pfp_bytes = update_pfp.getvalue()
+                                encoded_pfp = base64.b64encode(pfp_bytes).decode("utf-8")
+                                clean_b64_string = f"data:image/jpeg;base64,{encoded_pfp}"
+                                setattr(db_user, "profile_picture_name", clean_b64_string)
+
+                            # 3. Save updates permanently to Supabase cloud
                             db_session.commit()
-                            st.success(
-                                "🎉 Studio profile data changes written to PostgreSQL tables successfully!"
-                            )
+                            
+                            st.success("🎉 Studio profile data altered and synced securely to Supabase!")
                             time.sleep(0.5)
                             st.rerun()
-                    except Exception as save_err:
-                        db_session.rollback()
-                        st.error(f"❌ Profile modification write stalled: {save_err}")
-                    finally:
-                        db_session.close()
 
-    else:
-        st.warning(
-            "⚠️ Access reference missing: No active user authentication session detected."
-        )
+                    except Exception as db_err:
+                        db_session.rollback()
+                        st.error(f"Cloud update framework sync failure: {db_err}")
+
 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()  # Halts drawing right here to hide background try-on canvas modules cleanly
