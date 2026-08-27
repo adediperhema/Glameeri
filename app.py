@@ -3024,7 +3024,7 @@ if st.session_state["authenticated"]:
     # ---------------------------------------------------------------------
     st.markdown('<p class="m3-title">🌍 Glameeri AI Studio</p>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="m3-subtitle">100% Free Pattern Workspace for African Tailors</p>',
+        '<p class="m3-subtitle">Creative Workspace for African Fashion Designers</p>',
         unsafe_allow_html=True,
     )
 # =========================================================================
