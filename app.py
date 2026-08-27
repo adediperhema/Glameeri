@@ -2128,7 +2128,7 @@ BODY_SEGMENTATION_ROUTER = {
 
 
 # 1. Establish the precise filesystem track path pointing to your local logo file
-local_logo_disk_path = os.path.join("images", "fashion_logo1.png")
+local_logo_disk_path = os.path.join("images", "fashion_logo1_nobg.png")
 
 # Authoritative high-fashion fallback image link deployed if your local disk asset is missing
 navbar_logo_render_url = "https://unsplash.com"
