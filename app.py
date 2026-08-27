@@ -1044,11 +1044,11 @@ elif sidebar_selection == "🛒 Marketplace":
         # style="width: 500px; height: 600px;"
         # Force the markdown engine to interpret the payload as native web node parameters
         st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
-        from shop_page import render_marketplace_hub
+    from shop_page import render_marketplace_hub
 
         # db = SessionLocal()
-        render_marketplace_hub(db_session)
-        db_session.close()
+    render_marketplace_hub(db_session)
+    db_session.close()
     ##############
     st.markdown('<div class="vk-card">', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
