@@ -4583,40 +4583,47 @@ if (
         c_waist = float(st.session_state.get("billing_waist_val", 74))
         c_hips = float(st.session_state.get("billing_hips_val", 98))
 
+                # =========================================================================
+        # 💳 REWRITE: NATIVE PAYHUB GARMENT CHECKOUT INTEGRATION LAYER 💳
+        # =========================================================================
         if st.button(
-            "💳 Process Stripe Customer Payment For This Attire Design",
-            key="step4_stripe_garment_checkout_cta",
+            "💳 Process Customer Payment For This Attire Design",
+            key="step4_payhub_garment_checkout_cta",
             use_container_width=True,
         ):
             user_session_id_val = st.session_state.get("user_session_id", 0)
 
             st.info(
-                "⏳ Generating dynamic custom attire checkout lines. Connecting to Stripe..."
+                "⏳ Generating dynamic custom attire checkout lines. Connecting to PayHub..."
             )
 
-        # Fire checkout generation pass using live sizing dimensions and manually edited costs
-        attire_payment_url = create_attire_checkout_session(
-            user_id=user_session_id_val,
-            client_name=current_client_title,
-            cost_usd=active_usd_base_cost,
-            bust=c_bust,
-            waist=c_waist,
-            hips=c_hips,
-        )
+            # FIX: Moved inside the button click context scope so it runs ONLY when pressed!
+            # Change the calling routine function reference to import your PayHub orchestration service
+            from payhub_service import create_attire_payhub_checkout_session
 
-        # 💡 INDENTED INSIDE THE BUTTON: This fixes the red line error completely
-        if attire_payment_url and "ERROR" in attire_payment_url:
-            st.error(attire_payment_url)
-        elif attire_payment_url:
-            st.success(
-                "🎉 Checkout session compiled successfully! Route customer out to clear payments using the portal gate below:"
+            attire_payment_url = create_attire_payhub_checkout_session(
+                user_id=user_session_id_val,
+                client_name=current_client_title,
+                cost_usd=active_usd_base_cost,
+                bust=c_bust,
+                waist=c_waist,
+                hips=c_hips,
             )
-            # Provide a clickable link button or link text for the user
-            st.link_button(
-                "🚀 Proceed to Stripe Checkout",
-                attire_payment_url,
-                use_container_width=True,
-            )
+
+            # Evaluate execution payload strings returned by your gateway network handlers
+            if attire_payment_url and "ERROR" in attire_payment_url:
+                st.error(attire_payment_url)
+            elif attire_payment_url:
+                st.success(
+                    "🎉 PayHub checkout session compiled successfully! Route customer out to clear payments using the portal gate below:"
+                )
+                
+                # Render secure navigation portal buttons to forward users to your active invoice payment page
+                st.link_button(
+                    "🚀 Proceed to PayHub Checkout",
+                    attire_payment_url,
+                    use_container_width=True,
+                )
 
         if st.button(
             "↩️ Reset Studio and Build Another Variant", key="reset_studio_final_action"
