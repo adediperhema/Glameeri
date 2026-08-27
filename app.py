@@ -284,59 +284,53 @@ if st.session_state.get("authenticated") == True:
 
     fallback_studio_name = "Premium Fashion House"
     user_session_id_val = st.session_state.get("user_session_id", 0)
-    # Establish a fresh connection session straight to your PostgreSQL database cluster
-    # db_session = SessionLocal()
+    
     current_user: Any = None
     token_studio_name: str = fallback_studio_name
+    verified_email_log: str = "studio@volkoda.com"
+    verified_bio_log: str = "No corporate profile logs attached."
+    active_avatar_name: str = "default_profile.png"
 
+    # 1. FIX: Keep database queries intact and read variables BEFORE closing the connection
     try:
         if user_session_id_val > 0:
             current_user = (
                 db_session.query(User).filter(User.id == user_session_id_val).first()
             )
             if current_user:
-                token_studio_name = str(
-                    getattr(current_user, "studio_name", fallback_studio_name)
-                )
+                token_studio_name = str(getattr(current_user, "studio_name", fallback_studio_name))
+                verified_email_log = str(getattr(current_user, "email", "studio@volkoda.com"))
+                verified_bio_log = str(getattr(current_user, "biography", "No corporate profile logs attached."))
+                active_avatar_name = str(getattr(current_user, "profile_picture_name", "default_profile.png"))
     except Exception as query_error:
         st.sidebar.error(f"Profile recovery bottleneck: {query_error}")
     finally:
-        db_session.close()
+        db_session.close()  # Now it is completely safe to close the database session
 
-    # Pull user metadata properties safely out of your PostgreSQL data cache rows
-    verified_email_log: str = str(getattr(current_user, "email", "studio@volkoda.com"))
-    verified_bio_log: str = str(
-        getattr(current_user, "biography", "No corporate profile logs attached.")
-    )
     active_studio_title: str = str(token_studio_name)
-    active_avatar_name: str = str(
-        getattr(current_user, "profile_picture_name", "default_profile.png")
-    )
+    avatar_render_source_url = "https://unsplash.com" # High fashion default fallback image
 
-    local_avatar_disk_path = os.path.join("profile_pics", active_avatar_name)
-    avatar_render_source_url = "https://unsplash.com"
+    # =========================================================================
+    # 🪡 FIX 2: BASE64 CLOUD STRING INTERPRETATION LOGIC (NO DISK CHECKS) 🪡
+    # =========================================================================
+    if active_avatar_name and active_avatar_name != "default_profile.png":
+        # If the string starts with data:image, it means it's our new persistent Base64 cloud file stream!
+        if active_avatar_name.startswith("data:image"):
+            avatar_render_source_url = active_avatar_name
+        else:
+            # Fallback legacy check just in case an old local text filename is still registered in your rows
+            local_avatar_disk_path = os.path.join("profile_pics", active_avatar_name)
+            if os.path.exists(local_avatar_disk_path):
+                try:
+                    with open(local_avatar_disk_path, "rb") as image_file:
+                        import base64
+                        raw_b64_bytes = base64.b64encode(image_file.read())
+                        clean_b64_string = raw_b64_bytes.decode("utf-8").replace("\n", "").replace("\r", "")
+                        avatar_render_source_url = f"data:image/png;base64,{clean_b64_string}"
+                except Exception:
+                    pass
 
-    if (
-        os.path.exists(local_avatar_disk_path)
-        and active_avatar_name != "default_profile.png"
-    ):
-        try:
-            with open(local_avatar_disk_path, "rb") as image_file:
-                import base64
-
-                # Strip all text line layout dividers from the Base64 image data string
-                raw_b64_bytes = base64.b64encode(image_file.read())
-                clean_b64_string = (
-                    raw_b64_bytes.decode("utf-8").replace("\n", "").replace("\r", "")
-                )
-                avatar_render_source_url = f"data:image/png;base64,{clean_b64_string}"
-        except Exception:
-            pass
-
-    # Create the button with the matching key
-    # st.button("Submit Project", key="blue_button")
-
-    # 🔥 FIX: We switch the background parameters from gradients to absolute solid crisp white (#ffffff)!
+    # 🔥 Sidebar payload with solid crisp white parameters (#ffffff)
     sidebar_profile_html_payload = (
         "<style>"
         ".vk-modal-checkbox-switch { display: none !important; }"
@@ -376,6 +370,7 @@ if st.session_state.get("authenticated") == True:
 
     # Render directly to the sidebar area using safe HTML evaluation flags
     st.sidebar.markdown(sidebar_profile_html_payload, unsafe_allow_html=True)
+
     # 1. Fetch live metrics directly out of your PostgreSQL records on every rerun pass
     user_session_id_val = st.session_state.get("user_session_id", 0)
     # db_session = SessionLocal()
