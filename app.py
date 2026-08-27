@@ -4373,7 +4373,7 @@ if (
             "show_3b_measurement_form_workbook"
         ]
         st.rerun()
-        open_client(garment_cut)
+        open_client(garment_cut,db_session)
     # --- BUTTON 2 & 3 SUBMISSION ROW ---
 
     # -------------------------------------------------------------------------
