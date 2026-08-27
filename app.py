@@ -2718,25 +2718,32 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
 
         if uploaded_avatar is not None:
             try:
-                # Securely save file arrays onto your workstation project disk drive directories
-                import os
+                import base64
 
-                os.makedirs("profile_pics", exist_ok=True)
-                secure_disk_filename = f"user_{int(time.time())}_{uploaded_avatar.name}"
-                target_disk_path = os.path.join("profile_pics", secure_disk_filename)
+                # 1. Read raw image stream bytes directly from the uploader
+                avatar_raw_bytes = uploaded_avatar.getvalue()
 
-                # Write stream payload blocks cleanly onto local workspace sectors
-                with open(target_disk_path, "wb") as disk_file:
-                    disk_file.write(uploaded_avatar.getbuffer())
+                # 2. Convert to a permanent single-line Base64 text payload string
+                encoded_avatar_b64 = base64.b64encode(avatar_raw_bytes).decode("utf-8")
+                clean_b64_payload = f"data:image/jpeg;base64,{encoded_avatar_b64}"
 
-                st.session_state["reg_avatar_filename"] = secure_disk_filename
+                # 3. Update the data column in your Supabase table via your active ORM user object
+                # (Assuming 'current_user' represents your logged-in database row)
+                current_user.profile_picture_name = clean_b64_payload
+                db_session.commit()
+
+                # 4. Sync it to session state cache memory
+                st.session_state["reg_avatar_filename"] = clean_b64_payload
+
                 st.sidebar.success(
-                    "📸 Custom avatar uploaded and mapped cleanly into cache memory registers!"
+                    "📸 Custom avatar uploaded and saved permanently to Supabase cloud!"
                 )
             except Exception as upload_err:
-                st.sidebar.error(f"Avatar file stream staging failed: {upload_err}")
+                db_session.rollback()
+                st.sidebar.error(f"Avatar file stream cloud save failed: {upload_err}")
 
         st.markdown("<br/>", unsafe_allow_html=True)
+
 
         if st.form_submit_button(
             "🚀 Complete Account Registration", use_container_width=True
