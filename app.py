@@ -866,27 +866,24 @@ if sidebar_selection == "📁 Fabric Collection Manager":
             # ---------------------------------------------------------------------
         # 🚀 NEW NAVIGATION BUTTON: LINKS DYNAMICALLY TO THE PORTFOLIO PAGE 🚀
         # ---------------------------------------------------------------------
-    if st.button(
-            "👁️ View Onboarded Assets inside Lookbook Portfolio ➔", 
-            key="fabric_manager_to_portfolio_redirect_cta",
-            type="secondary",
-            use_container_width=True
-        ):
-            # Update the state routing target string pointer variable
-            st.session_state["sidebar_selection_state_key"] = "🌟 Collection Lookbook Portfolio"
-            
-            # Execute a clean module reload pass to force the layout view to update instantly
-            __import__('time').sleep(0.1)
-            st.rerun()
+   if st.button(
+        "👁️ View Onboarded Assets inside Lookbook Portfolio ➔", 
+        key="fabric_manager_to_portfolio_redirect_cta",
+        type="secondary",
+        use_container_width=True
+    ):
+        st.session_state["sidebar_selection_state_key"] = "🌟 Collection Lookbook Portfolio"
+        __import__('time').sleep(0.1)
+        st.rerun()
 
+    # 🔥 THE EXACT POSITION: Place this at the very end of the Fabric Manager branch.
+    # It must be indented by exactly 4 spaces (aligned with the button, not inside it).
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
         # 🔥 FIXED: Removed the stray standalone st.stop() that was freezing your script timeline!
         # The code can now drop down naturally to evaluate the rest of your dashboard modules.
 
-    st.markdown('<div class="vk-card">', unsafe_allow_html=True)
-    st.stop() 
 
-        # 🔥 FIXED: Removed the stray standalone st.stop() that was freezing your script timeline!
-        # The code can now drop down naturally to evaluate the rest of your dashboard modules.
 
 
 # =========================================================================
