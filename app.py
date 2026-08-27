@@ -878,8 +878,12 @@ if sidebar_selection == "📁 Fabric Collection Manager":
             # Execute a clean module reload pass to force the layout view to update instantly
             __import__('time').sleep(0.1)
             st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
-            st.stop()      
+
+        # 🔥 FIXED: Removed the stray standalone st.stop() that was freezing your script timeline!
+        # The code can now drop down naturally to evaluate the rest of your dashboard modules.
+
+    st.markdown('<div class="vk-card">', unsafe_allow_html=True)
+    st.stop() 
 
         # 🔥 FIXED: Removed the stray standalone st.stop() that was freezing your script timeline!
         # The code can now drop down naturally to evaluate the rest of your dashboard modules.
