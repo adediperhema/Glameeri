@@ -3,7 +3,7 @@ import streamlit as st
 import time
 import json
 from database import Product, Order, User, TryOnFeatureMeter
-from tryon_engine import execute_tryon_overlay
+
 
 # Simulated constant session contexts - replace with your application authentication framework variables
 token_user_id = st.session_state.get("user_id", 1)
