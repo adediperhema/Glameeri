@@ -3179,9 +3179,8 @@ if st.session_state["authenticated"]:
         model_source = st.radio(
             "Select Layout Image Source Mode:",
             [
-                "Use Workshop Lookbook Templates",
+                "Use Default Lookbook Templates",
                 "Upload Custom Client Model",
-                "Upload Custom Client Cloth Style and Model",
             ],
             key="model_source_selector",
         )
