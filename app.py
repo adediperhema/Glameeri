@@ -1382,7 +1382,6 @@ elif sidebar_selection == "📏 Saved Measurements Ledger":
 # =========================================================================
 elif sidebar_selection == "📊 Analytical Orders Ledger":
     ##############
-
     # 1. Establish the precise filesystem track path pointing to your local logo file
     local_logo_disk_path = os.path.join("images", "fashion_logo1_nobg.png")
 
@@ -1394,10 +1393,7 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
         try:
             with open(local_logo_disk_path, "rb") as logo_bytes_file:
                 import base64
-
                 encoded_logo_b64 = base64.b64encode(logo_bytes_file.read())
-
-                # Match the exact name used on BOTH lines to clear the red text error!
                 clean_logo_b64_string = (
                     encoded_logo_b64.decode("utf-8").replace("\n", "").replace("\r", "")
                 )
@@ -1407,62 +1403,89 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
         except Exception:
             pass
 
-        # 3. COMPRESS THE NAVBAR PAYLOAD INSIDE PARENTHESES TO ERASE RAW CODE TEXT GATES
-        navbar_branding_html_payload = (
-            "<style>"
-            "  .vk-navbar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; padding: 14px 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: sans-serif; }"
-            "  .vk-navbar-logo-img { width: auto; max-height: 60px; object-fit: contain; border-radius: 6px; }"
-            "  .brand-text-wrapper { flex-grow: 1; text-align: center; margin-right: 60px; }"
-            "  .brand-tagline { font-size: 16px; font-weight: 600; color: #E05A47; text-transform: uppercase; letter-spacing: 1px; }"
-            "</style>"
-            "<div class='vk-navbar'>"
-            f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='AfriTextile Core Branding Logo'/>"
-            "   <div class='brand-text-wrapper'>"
-            "       <span class='brand-tagline'>AI Fashion innovation Studio</span>"
-            "   </div>"
-            "</div>"
-        )
-
-        # Force the markdown engine to interpret the payload as native web node parameters
-        st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
+    # 3. COMPRESS THE NAVBAR PAYLOAD INSIDE PARENTHESES TO ERASE RAW CODE TEXT GATES
+    navbar_branding_html_payload = (
+        "<style>"
+        "  .vk-navbar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; padding: 14px 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: sans-serif; }"
+        "  .vk-navbar-logo-img { width: auto; max-height: 60px; object-fit: contain; border-radius: 6px; }"
+        "  .brand-text-wrapper { flex-grow: 1; text-align: center; margin-right: 60px; }"
+        "  .brand-tagline { font-size: 16px; font-weight: 600; color: #E05A47; text-transform: uppercase; letter-spacing: 1px; }"
+        "</style>"
+        "<div class='vk-navbar'>"
+        f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='AfriTextile Core Branding Logo'/>"
+        "   <div class='brand-text-wrapper'>"
+        "       <span class='brand-tagline'>AI Fashion innovation Studio</span>"
+        "   </div>"
+        "</div>"
+    )
+    st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
 
     ##############
-
-    # 4. 🔥 NEW: EXTRACT PROFILE PICTURE AND INFORMATION MATRICES FROM POSTGRESQL 🔥
-    # Query user row indices to pull brand information to pass to the marketplace
+    # 4. EXTRACT USER DATA FROM SUPABASE (READ STAGE RUNS BEFORE EXTRACTING MODULES)
     from database import User
     from typing import Any, cast
     
     token_user_id = st.session_state.get("user_session_id", 0)
     
-    # Secure user database row configurations via active session context lines
-    db_user_row = db_session.query(User).filter(User.id == token_user_id).first()
-    safe_user = cast(Any, db_user_row)
+    # Establish record variables safely outside of blocks
+    merchant_studio_name = "AfriTextile Artisan Label"
+    merchant_biography = "No public studio overview logged yet."
+    merchant_profile_img = "default_profile.png"
     
-    # Assign verified string values using default fallbacks to prevent empty null pointer crashes
-    merchant_studio_name = str(getattr(safe_user, "studio_name", "AfriTextile Artisan Label"))
-    merchant_biography = str(getattr(safe_user, "biography", "No public studio overview logged yet."))
-    merchant_profile_img = str(getattr(safe_user, "profile_picture_name", "default_profile.png"))
+    try:
+        db_user_row = db_session.query(User).filter(User.id == token_user_id).first()
+        if db_user_row:
+            safe_user = cast(Any, db_user_row)
+            merchant_studio_name = str(getattr(safe_user, "studio_name", "AfriTextile Artisan Label"))
+            merchant_biography = str(getattr(safe_user, "biography", "No public studio overview logged yet."))
+            merchant_profile_img = str(getattr(safe_user, "profile_picture_name", "default_profile.png"))
+    except Exception as db_err:
+        st.error(f"Ledger metric sync warning: {db_err}")
+
+    # =========================================================================
+    # STEP 5: RUN MAIN SELLER DASHBOARD MODULE SUITE FIRST (PLACED AT THE TOP)
+    # =========================================================================
+    from seller_dashboard import render_seller_dashboard_suite
+    render_seller_dashboard_suite(db_session, token_user_id)
     
-    # 5. 🔥 RENDER DYNAMIC PUBLIC STOREFRONT PREVIEW CONTAINER 🔥
-    st.markdown('<div style="background-color:#f8fafc; border:1px solid #e2e8f0; padding:15px; border-radius:12px; margin-bottom:20px; font-family:sans-serif;">', unsafe_allow_html=True)
-    st.markdown("<h4 style='margin-top:0; color:#4a5568;'>🌐 Global Storefront Identity Sync Tracker</h4>", unsafe_allow_html=True)
+    # Close database context cleanly right after our core widgets finish building
+    db_session.close()
+
+    st.markdown("<br/><hr style='border:0; border-top:1px dashed #cbd5e1; margin:25px 0;'/><br/>", unsafe_allow_html=True)
+
+    # =========================================================================
+    # STEP 6: RENDER SYNC TRACKER PANEL AT THE VERY BOTTOM OF THE PAGE 
+    # =========================================================================
+    st.markdown('<div style="background-color:#ffffff; border:1px solid #e2e8f0; padding:20px; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); font-family:sans-serif;">', unsafe_allow_html=True)
+    st.markdown("<h4 style='margin-top:0; color:#1e293b; font-weight:800;'>🌐 Global Storefront Identity Sync Tracker</h4>", unsafe_allow_html=True)
     
-    prof_col1, prof_col2 = st.columns([1, 4])
+    prof_col1, prof_col2 = st.columns([1, 4], gap="medium")
     with prof_col1:
-        # Resolve path pointing to merchant avatar snapshot image file
-        avatar_disk_path = os.path.join("images", merchant_profile_img)
-        if os.path.exists(avatar_disk_path):
-            st.image(avatar_disk_path, use_container_width=True)
-        else:
-            # High-fashion default replacement icon
-            st.image("https://unsplash.com", use_container_width=True)
+        # 🪡 FIX: Decodes your database Base64 avatar payload dynamically instead of looking for file folders
+        avatar_render_source_url = "https://unsplash.com"
+        
+        if merchant_profile_img and merchant_profile_img != "default_profile.png":
+            if merchant_profile_img.startswith("data:image"):
+                avatar_render_source_url = merchant_profile_img
+            else:
+                legacy_path = os.path.join("profile_pics", merchant_profile_img)
+                if os.path.exists(legacy_path):
+                    try:
+                        with open(legacy_path, "rb") as image_file:
+                            raw_bytes = base64.b64encode(image_file.read()).decode("utf-8")
+                            avatar_render_source_url = f"data:image/png;base64,{raw_bytes}"
+                    except Exception:
+                        pass
+        
+        # Display the custom cloud file cleanly on page sector grids
+        st.image(avatar_render_source_url, use_container_width=True, caption="Active Identity")
             
     with prof_col2:
-        st.markdown(f"##### 🏷️ Brand Label: **{merchant_studio_name}**")
-        st.write(f"*{merchant_biography}*")
+        st.markdown(f"##### 🏷️ Registered Identity Label: **{merchant_studio_name}**")
+        st.markdown(f"<p style='font-style:italic; color:#475569; font-size:14px;'>\"{merchant_biography}\"</p>", unsafe_allow_html=True)
+        st.divider()
         
-        # Action toggle binds the profile parameters cleanly into public storefront lookups
+        # Action broadcast checkbox persistence logic
         include_profile_flag = st.checkbox(
             "🚀 Broadcast brand profile picture and biography metrics directly onto live marketplace product grids",
             value=st.session_state.get("step3_broadcast_profile_parameters", True),
@@ -1470,15 +1493,6 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
         )
         st.session_state["step3_broadcast_profile_parameters"] = include_profile_flag
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # 6. LAUNCH COMPREHENSIVE SELLER DASHBOARD UTILITIES MODULE
-    from seller_dashboard import render_seller_dashboard_suite
-    
-    # Invoke the dashboard suite, streaming structural parameters natively
-    render_seller_dashboard_suite(db_session, token_user_id)
-    
-    db_session.close()
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
