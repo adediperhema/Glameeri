@@ -639,9 +639,8 @@ if sidebar_selection == "👤 Edit Studio Profile":
                     except Exception as db_err:
                         db_session.rollback()
                         st.error(f"Cloud update framework sync failure: {db_err}")
-
-st.markdown("</div>", unsafe_allow_html=True)
-st.stop()  # Halts drawing right here to hide background try-on canvas modules cleanly
+            st.markdown("</div>", unsafe_allow_html=True)
+            st.stop()  # Halts drawing right here to hide background try-on canvas modules cleanly
 
 
 # Safe initialization for collection records array bucket memory slots
