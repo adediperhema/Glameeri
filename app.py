@@ -1626,40 +1626,32 @@ elif sidebar_selection == "💰 Subscription Pricing Plan":
     st.markdown("<br/><br/>", unsafe_allow_html=True)
 
     st.write("#### 🛠️ Manage Workspace Operational Status:")
+        # 1. Your original selectbox sits at the top to catch the user's choice
     selected_plan_target = st.selectbox(
         "Select target subscription upgrade plan level:",
         ["Freemium Sandbox", "Premium House Seams", "Enterprise Elite Matrix"],
         key="pricing_plan_selection_dropdown",
     )
 
-    # =========================================================================
-    # 🪡 INJECTION B: INTEGRATED STRIPE CHECKOUT REDIRECTS FOR PLANS (INDEX4.PY)
-    # =========================================================================
+    # 2. The mapping dictionary converts the dropdown string into a short text token
+    plan_map = {
+        "Premium House Seams": "premium",
+        "Enterprise Elite Matrix": "enterprise",
+        "Freemium Sandbox": "freemium",
+    }
+    chosen_tier_token = plan_map.get(selected_plan_target, "freemium")
+    billing_cycle = st.selectbox("Choose billing:", ["Monthly", "Annual"])
 
-    # =========================================================================
-    # 🪡 INJECTION B: INTEGRATED STRIPE CHECKOUT REDIRECTS FOR PLANS (INDEX4.PY)
-    # =========================================================================
-
-    # Inside your active Pricing tier module page:
-    if (
-        st.button(
-            "💳 Authorize Subscription Settlement & Synchronize Workspace",
-            key="pricing_execute_checkout_cta",
-            use_container_width=True,
-        )
-        and st.session_state.get("authenticated") == True
+    # 3. The unified PayHub action button processes the choice on click
+    if st.button(
+        "💳 Authorize Subscription Settlement & Synchronize Workspace",
+        key="pricing_execute_checkout_cta",
+        use_container_width=True,
+        disabled=not st.session_state.get("authenticated", False)
     ):
-        plan_map = {
-            "Premium House Seams": "premium",
-            "Enterprise Elite Matrix": "enterprise",
-            "Freemium Sandbox": "freemium",
-        }
-        chosen_tier_token = plan_map.get(selected_plan_target, "freemium")
-        billing_cycle = st.selectbox("Choose billing:", ["Monthly", "Annual"])
+        user_session_id_val = st.session_state.get("user_session_id", 0)
 
         if chosen_tier_token == "freemium":
-            # Freemium changes remain local and bypass Stripe payment layers completely
-            # db_write_session = SessionLocal()
             try:
                 target_user_row = (
                     db_session.query(User)
@@ -1669,37 +1661,40 @@ elif sidebar_selection == "💰 Subscription Pricing Plan":
                 if target_user_row:
                     setattr(target_user_row, "subscription_tier", "freemium")
                     db_session.commit()
-                    st.success(
-                        "🎉 Switched back to Freemium Sandbox Plan level tier successfully."
-                    )
+                    st.success("🎉 Switched back to Freemium Sandbox Plan level tier successfully.")
+                    time.sleep(0.5)
                     st.rerun()
             except Exception as e:
                 db_session.rollback()
+                st.error(f"Failed to reset database tier: {e}")
             finally:
                 db_session.close()
         else:
-            # 🔥 STRIPE CORES: Trigger real-time high-security checkout link generation!
-            from security import create_subscription_checkout_session
+            from payhub_service import create_subscription_payhub_checkout_session
 
             is_annual_bool = "Annual" in billing_cycle
-
-            st.info(
-                "⏳ Initializing highly secure Stripe payment handshake session channels. Please stand by..."
+            st.info("⏳ Initializing highly secure PayHub payment handshake session channels. Please stand by...")
+            
+            checkout_gateway_url = create_subscription_payhub_checkout_session(
+                user_id=user_session_id_val, 
+                tier_token=chosen_tier_token, 
+                is_annual=is_annual_bool
             )
-            checkout_gateway_url = create_subscription_checkout_session(
-                user_session_id_val, chosen_tier_token, is_annual_bool
-            )
 
-            if "ERROR" in checkout_gateway_url:
+            if checkout_gateway_url and "ERROR" in checkout_gateway_url:
                 st.error(checkout_gateway_url)
-            else:
-                # Provide an immediate active browser routing element link out to the user canvas screen
-                st.markdown(
-                    f'<a href="{checkout_gateway_url}" target="_blank" style="display:block; text-align:center; background-color:#E05A47; color:white; padding:12px; border-radius:8px; text-decoration:none; font-weight:700;">➡️ Proceed to Stripe Secure Checkout Portal</a>',
-                    unsafe_allow_html=True,
+            elif checkout_gateway_url:
+                st.success("🎉 Subscription invoice session compiled successfully! Open the gate below to clear payment:")
+                st.link_button(
+                    "➡️ Proceed to PayHub Secure Checkout Portal",
+                    checkout_gateway_url,
+                    use_container_width=True,
+                    type="primary"
                 )
+
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
+
 
 # =========================================================================
 # 🔓 PUBLIC GUEST SCREENS SECTOR (LOGINS, REGISTER, AND PRE-LOGIN PRICING)
