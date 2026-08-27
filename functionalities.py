@@ -514,7 +514,7 @@ def collection_button(garment_cut, token_studio_name, token_user_email, db_sessi
         db_session.close()
 
 
-def open_client(garment_cut):
+def open_client(garment_cut,db_session):
     # -------------------------------------------------------------------------
     # 🔥 STEP 1: DYNAMIC INTENSITY WORKBOOK REGISTRY FORM DRAWER 🔥
     # -------------------------------------------------------------------------
