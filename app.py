@@ -57,33 +57,18 @@ from typing import Any, cast
 
 # safe_profile = cast(Any, raw_profile_object)
 
+
+# Configure system logging parameters
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 # Inside app.py, verify you are generating a fully bound local database session parameter
 from database import get_db_session
 
 # This creates a session that inherits the engine bind rules we just configured above
 db_session = get_db_session()
 
-# Configure system logging parameters
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# 1. Initialize the Streamlit SQL connection wrapper first
-# conn = st.connection("sql", url=DATABASE_URL)
-
-# 2. Extract the raw SQLAlchemy engine correctly (No leading underscore!)
-# engine = conn.engine
-
-# 3. Spin up your traditional ORM session object using the engine
-# db_session = Session(engine)
-#db_session = SessionLocal()
-# =========================================================================
-# 📸 LOCAL DISK OVERRIDE: AUTOMATED IMAGE_URL COLUMN CONVERSION RUNNER 📸
-# =========================================================================
-# This executes an inline ALTER command locally on your machine disk drive,
-# expanding your string limits to infinite character text size constraints instantly!
-# =========================================================================
-# 📸 LOCAL DISK OVERRIDE: AUTOMATED IMAGE_URL COLUMN CONVERSION RUNNER 📸
-# =========================================================================
 from typing import Any
 from sqlalchemy import text as sqlalchemy_text
 
@@ -125,7 +110,6 @@ from security import (
     get_password_hash,
     verify_password,
 )
-
 
 # =========================================================================
 # 🛡️ CRYPTOGRAPHIC SECURITY VERIFICATION SHIELD GATE (TOP OF APP.PY)
@@ -4989,9 +4973,7 @@ if (
 
 
 # =========================================================================
-# 🔓 END OF LOGGED-IN SECTOR / SAFETY SWITCH BOUNDARY
+# 🔓 END OF CODE
 # =========================================================================
 
-# st.markdown("</div>", unsafe_allow_html=True)
 
-# st.markdown("<br/>", unsafe_allow_html=True)
