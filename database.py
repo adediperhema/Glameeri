@@ -35,7 +35,7 @@ conn = st.connection(
 
 
 
-engine = conn._engine
+engine = conn.engine
 
 # 2. Bind it cleanly to your sessionmaker factory helper
 # ✅ This permanently solves your ArgumentError and UnboundExecutionError bugs!
