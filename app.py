@@ -57,6 +57,11 @@ from typing import Any, cast
 
 # safe_profile = cast(Any, raw_profile_object)
 
+# Inside app.py, verify you are generating a fully bound local database session parameter
+from database import get_db_session
+
+# This creates a session that inherits the engine bind rules we just configured above
+db_session = get_db_session()
 
 # Configure system logging parameters
 logging.basicConfig(level=logging.INFO)
@@ -70,7 +75,7 @@ logger = logging.getLogger(__name__)
 
 # 3. Spin up your traditional ORM session object using the engine
 # db_session = Session(engine)
-db_session = SessionLocal()
+#db_session = SessionLocal()
 # =========================================================================
 # 📸 LOCAL DISK OVERRIDE: AUTOMATED IMAGE_URL COLUMN CONVERSION RUNNER 📸
 # =========================================================================
