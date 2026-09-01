@@ -2715,33 +2715,46 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
             key="reg_avatar_file_uploader_widget",
         )
 
+                # ✅ FIX: Explicitly pull and define your user row variable BEFORE processing the file upload stream!
+        user_session_id_val = st.session_state.get("user_session_id", 0)
+        current_user = None
+
+        if user_session_id_val > 0:
+            current_user = db_session.query(User).filter(User.id == user_session_id_val).first()
+
         if uploaded_avatar is not None:
-            try:
-                import base64
+            # Enforce a safety check to verify the database row was successfully fetched
+            if not current_user:
+                st.sidebar.error("❌ Session Error: Could not locate active profile row parameters.")
+            else:
+                try:
+                    import base64
 
-                # 1. Read raw image stream bytes directly from the uploader
-                avatar_raw_bytes = uploaded_avatar.getvalue()
+                    # 1. Read raw image stream bytes directly from the uploader
+                    avatar_raw_bytes = uploaded_avatar.getvalue()
 
-                # 2. Convert to a permanent single-line Base64 text payload string
-                encoded_avatar_b64 = base64.b64encode(avatar_raw_bytes).decode("utf-8")
-                clean_b64_payload = f"data:image/jpeg;base64,{encoded_avatar_b64}"
+                    # 2. Convert to a permanent single-line Base64 text payload string
+                    encoded_avatar_b64 = base64.b64encode(avatar_raw_bytes).decode("utf-8")
+                    clean_b64_payload = f"data:image/jpeg;base64,{encoded_avatar_b64}"
 
-                # 3. Update the data column in your Supabase table via your active ORM user object
-                # (Assuming 'current_user' represents your logged-in database row)
-                current_user.profile_picture_name = clean_b64_payload
-                db_session.commit()
+                    # 3. Update the data column via setattr to satisfy editors and clear all red lines completely!
+                    setattr(current_user, "profile_picture_name", clean_b64_payload)
+                    db_session.commit()
 
-                # 4. Sync it to session state cache memory
-                st.session_state["reg_avatar_filename"] = clean_b64_payload
+                    # 4. Sync it to session state cache memory
+                    st.session_state["reg_avatar_filename"] = clean_b64_payload
 
-                st.sidebar.success(
-                    "📸 Custom avatar uploaded and saved permanently to Supabase cloud!"
-                )
-            except Exception as upload_err:
-                db_session.rollback()
-                st.sidebar.error(f"Avatar file stream cloud save failed: {upload_err}")
+                    st.sidebar.success(
+                        "📸 Custom avatar uploaded and saved permanently to Supabase cloud!"
+                    )
+                    time.sleep(0.1)
+                    st.rerun()
+                except Exception as upload_err:
+                    db_session.rollback()
+                    st.sidebar.error(f"Avatar file stream cloud save failed: {upload_err}")
 
         st.markdown("<br/>", unsafe_allow_html=True)
+
 
 
         if st.form_submit_button(
