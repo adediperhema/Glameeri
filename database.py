@@ -33,16 +33,8 @@ conn = st.connection(
 )
 
 
-# The engine handles raw communications with your remote Supabase database instance cluster
-engine = create_engine(
-    conn,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True  # Automatically checks if your Supabase connection is still alive before querying
-)
 
-
-engine = st_conn.driver
+engine = conn.driver
 
 # 2. Bind it cleanly to your sessionmaker factory helper
 # ✅ This permanently solves your ArgumentError and UnboundExecutionError bugs!
