@@ -2664,13 +2664,12 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
     # 🧵 REPLACEMENT CORES: PERSISTENT STATE-BOUND REGISTRATION ENGINE 🧵
     # =========================================================================
     st.markdown('<div class="vk-card">', unsafe_allow_html=True)
-    st.markdown("### 📝 Create Studio Atelier Account")
+    st.markdown("### 📝 Create Designer Account")
     st.write(
         "Register your custom fashion house parameters to initialize your secure production canvas workspace:"
     )
 
     # 🔥 STEP 1: INITIALIZE STABLE DEFAULT STATE KEYS IN PARENT MEMORY HOOKS 🔥
-    # This prevents Streamlit from wiping out your parameters during upload reruns!
     if "reg_email_cache" not in st.session_state:
         st.session_state["reg_email_cache"] = ""
     if "reg_pass_cache" not in st.session_state:
@@ -2680,164 +2679,136 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
     if "reg_avatar_filename" not in st.session_state:
         st.session_state["reg_avatar_filename"] = "default_profile.png"
 
-    # --- PART A: OUT-OF-FORM OPTIONAL AVATAR FILE INTAKE LAYER ---
-    # Placing this outside the form eliminates background state reset crashes entirely!
-
-    # --- PART B: THE CORE ACCOUNT PARAMETERS FORM MATRIX ---
-    # st.markdown("<br/>", unsafe_allow_html=True)
+    # --- THE CORE ACCOUNT PARAMETERS FORM MATRIX ---
     st.write("Enter Account Credentials & Studio Metadata:")
 
     with st.form("user_registration_form_matrix_panel", clear_on_submit=False):
 
-        # We explicitly update the persistent parent session state caches directly on the fly
         reg_mail = st.text_input(
-            "Corporate Studio Email Address:",
+            "Email Address:",
             placeholder="name@studio.com",
             value=st.session_state["reg_email_cache"],
         )
 
         reg_pass = st.text_input(
-            "Account Secret Password Access:",
+            "Password:",
             type="password",
             placeholder="Min 6 characters recommended",
             value=st.session_state["reg_pass_cache"],
         )
 
         reg_studio = st.text_input(
-            "Atelier / Fashion House Name:",
+            "Designer / Fashion House Name:",
             placeholder="e.g., Glameeri AI Localization Studio",
             value=st.session_state["reg_studio_cache"],
         )
 
+        # ✅ PLACED SPECIFICALLY AFTER REG_STUDIO FIELD NATIVELY INSIDE THE FORM CELL
         uploaded_avatar = st.file_uploader(
             "Upload Optional Profile Avatar Graphic (PNG/JPG):",
             type=["png", "jpg", "jpeg"],
             key="reg_avatar_file_uploader_widget",
         )
 
-                # ✅ FIX: Explicitly pull and define your user row variable BEFORE processing the file upload stream!
-        user_session_id_val = st.session_state.get("user_session_id", 0)
-        current_user = None
+        # The submit button stands firmly inside the form block context layout tree
+        submit_registration_trigger = st.form_submit_button(
+            "🚀 Complete Account Registration", 
+            use_container_width=True
+        )
 
-        if user_session_id_val > 0:
-            current_user = db_session.query(User).filter(User.id == user_session_id_val).first()
+    # Process the registration database write pipeline ONLY after a valid form submission
+    if submit_registration_trigger:
 
+        # Trim and wash incoming parameters cleanly to prevent case lookup blocks
+        clean_email = str(reg_mail).strip().lower()
+        clean_password = str(reg_pass).strip()
+        clean_studio = str(reg_studio).strip()
+
+        # Update background cache states immediately to protect typed strings across failures
+        st.session_state["reg_email_cache"] = clean_email
+        st.session_state["reg_pass_cache"] = clean_password
+        st.session_state["reg_studio_cache"] = clean_studio
+
+        # 📸 ENCODE SELECTED AVATAR GRAPHIC UPON FORM SUBMISSION (PREVENTS INTERACTION LAGS)
         if uploaded_avatar is not None:
-            # Enforce a safety check to verify the database row was successfully fetched
-            if not current_user:
-                st.sidebar.error("❌ Session Error: Could not locate active profile row parameters.")
-            else:
-                try:
-                    import base64
+            try:
+                import base64
+                avatar_raw_bytes = uploaded_avatar.getvalue()
+                encoded_avatar_b64 = base64.b64encode(avatar_raw_bytes).decode("utf-8")
+                st.session_state["reg_avatar_filename"] = f"data:image/jpeg;base64,{encoded_avatar_b64}"
+            except Exception as convert_err:
+                st.error(f"Local avatar encoding failed: {convert_err}")
 
-                    # 1. Read raw image stream bytes directly from the uploader
-                    avatar_raw_bytes = uploaded_avatar.getvalue()
+        # Secure Validation Safety Check Gate
+        if not clean_email or not clean_password or not clean_studio:
+            st.error(
+                "❌ Registration parameters cannot remain blank. Please complete all form inputs."
+            )
+        elif len(clean_password) < 4:
+            st.error(
+                "❌ Security Restraint: Password entry must contain at least 4 characters."
+            )
+        else:
+            try:
+                # Look up potential duplicate studio email profiles in your database rows
+                user_exists = (
+                    db_session.query(User).filter(User.email == clean_email).first()
+                )
+                if user_exists:
+                    st.error(
+                        "⚠️ Account Conflict: A studio profile is already registered under this email address."
+                    )
+                else:
+                    from security import get_password_hash
 
-                    # 2. Convert to a permanent single-line Base64 text payload string
-                    encoded_avatar_b64 = base64.b64encode(avatar_raw_bytes).decode("utf-8")
-                    clean_b64_payload = f"data:image/jpeg;base64,{encoded_avatar_b64}"
+                    # Scramble text input into an explicit native password hash signature
+                    hashed_secret_payload = get_password_hash(clean_password)
 
-                    # 3. Update the data column via setattr to satisfy editors and clear all red lines completely!
-                    setattr(current_user, "profile_picture_name", clean_b64_payload)
+                    # Instantiate the ORM database row using unconflicted setattr mapping methods
+                    new_user = User()
+                    setattr(new_user, "email", clean_email)
+                    setattr(new_user, "hashed_password", hashed_secret_payload)
+                    setattr(new_user, "studio_name", clean_studio)
+                    setattr(
+                        new_user,
+                        "biography",
+                        "No corporate profile log attached yet.",
+                    )
+                    setattr(
+                        new_user,
+                        "profile_picture_name",
+                        st.session_state["reg_avatar_filename"],
+                    )
+
+                    # Force database update commands
+                    db_session.add(new_user)
                     db_session.commit()
 
-                    # 4. Sync it to session state cache memory
-                    st.session_state["reg_avatar_filename"] = clean_b64_payload
-
-                    st.sidebar.success(
-                        "📸 Custom avatar uploaded and saved permanently to Supabase cloud!"
+                    st.success(
+                        "🎉 Account compiled successfully! Redirecting to login panel..."
                     )
-                    time.sleep(0.1)
-                    st.rerun()
-                except Exception as upload_err:
-                    db_session.rollback()
-                    st.sidebar.error(f"Avatar file stream cloud save failed: {upload_err}")
 
-        st.markdown("<br/>", unsafe_allow_html=True)
+                    # Wipe cache traces clean upon absolute registration success
+                    st.session_state["reg_email_cache"] = ""
+                    st.session_state["reg_pass_cache"] = ""
+                    st.session_state["reg_studio_cache"] = ""
+                    st.session_state["reg_avatar_filename"] = "default_profile.png"
 
-
-
-        if st.form_submit_button(
-            "🚀 Complete Account Registration", use_container_width=True
-        ):
-
-            # Trim and wash incoming parameters cleanly to prevent case lookup blocks
-            clean_email = str(reg_mail).strip().lower()
-            clean_password = str(reg_pass).strip()
-            clean_studio = str(reg_studio).strip()
-
-            # Update background cache states immediately to protect typed strings across failures
-            st.session_state["reg_email_cache"] = clean_email
-            st.session_state["reg_pass_cache"] = clean_password
-            st.session_state["reg_studio_cache"] = clean_studio
-
-            # Secure Validation Safety Check Gate
-            if not clean_email or not clean_password or not clean_studio:
-                st.error(
-                    "❌ Registration parameters cannot remain blank. Please complete all form inputs."
-                )
-            elif len(clean_password) < 4:
-                st.error(
-                    "❌ Security Restraint: Password entry must contain at least 4 characters."
-                )
-            else:
-                # db = SessionLocal()
-                try:
-                    # Look up potential duplicate studio email profiles in your PostgreSQL table rows
-                    user_exists = (
-                        db_session.query(User).filter(User.email == clean_email).first()
-                    )
-                    if user_exists:
-                        st.error(
-                            "⚠️ Account Conflict: A studio profile is already registered under this email address."
-                        )
-                    else:
-                        from security import get_password_hash
-
-                        # Scramble text input into an explicit, native Python 3.14 single-pass hash signature
-                        hashed_secret_payload = get_password_hash(clean_password)
-
-                        # Instantiate the ORM database row using unconflicted setattr mapping methods
-                        new_user = User()
-                        setattr(new_user, "email", clean_email)
-                        setattr(new_user, "hashed_password", hashed_secret_payload)
-                        setattr(new_user, "studio_name", clean_studio)
-                        setattr(
-                            new_user,
-                            "biography",
-                            "No corporate profile log attached yet.",
-                        )
-                        setattr(
-                            new_user,
-                            "profile_picture_name",
-                            st.session_state["reg_avatar_filename"],
-                        )
-
-                        # Force database cluster update commands
-                        db_session.add(new_user)
-                        db_session.commit()
-
-                        st.success(
-                            "🎉 Account compiled across PostgreSQL tables successfully! Redirecting to login..."
-                        )
-
-                        # Wipe cache traces clean upon absolute registration success
-                        st.session_state["reg_email_cache"] = ""
-                        st.session_state["reg_pass_cache"] = ""
-                        st.session_state["reg_studio_cache"] = ""
-                        st.session_state["reg_avatar_filename"] = "default_profile.png"
-
-                        db_session.close()
-                        time.sleep(0.7)
-
-                        # Transition user smoothly over to your login panel view card
-                        st.session_state["app_view"] = "is_logged_in"
-                        st.rerun()
-                except Exception as db_write_error:
-                    db_session.rollback()
-                    st.error(f"❌ Database row write failed: {db_write_error}")
-                finally:
                     db_session.close()
+                    time.sleep(0.7)
+
+                    # Transition user smoothly over to your login panel view card
+                    st.session_state["app_view"] = "is_logged_in"
+                    st.rerun()
+            except Exception as db_write_error:
+                db_session.rollback()
+                st.error(f"❌ Database row write failed: {db_write_error}")
+            finally:
+                db_session.close()
+
+    # Close out your custom layout card division tag safely here
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
     # Public view navigation link safely drops outside form container tracking parameters
     st.button(
