@@ -28,13 +28,14 @@ db_config = st.secrets["db_credentials"]
 
 # Example connecting via Streamlit's SQL connection wrapper
 conn = st.connection(
-    "sql",
-    url=f"postgresql://{db_config['username']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}",
+    "supabase_db_connection",
+    type="sql",
+    url=f"postgresql://{db_config['username']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}?sslmode=require",
 )
 
 
 
-engine = conn.driver
+engine = conn._engine
 
 # 2. Bind it cleanly to your sessionmaker factory helper
 # ✅ This permanently solves your ArgumentError and UnboundExecutionError bugs!
