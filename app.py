@@ -349,8 +349,7 @@ if st.session_state.get("authenticated") == True:
 
     active_studio_title: str = str(token_studio_name)
     avatar_render_source_url = (
-        #"https://unsplash.com"  # High fashion default fallback image
-        "images/avatar.png"
+        "https://unsplash.com"  # High fashion default fallback image
     )
 
     # =========================================================================
@@ -3084,24 +3083,22 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
                     hashed_secret_payload = get_password_hash(clean_password)
 
                     # Instantiate the ORM database row using unconflicted setattr mapping methods
+                    # Instantiate the ORM database row using unconflicted setattr mapping methods
                     new_user = User()
                     setattr(new_user, "email", clean_email)
                     setattr(new_user, "hashed_password", hashed_secret_payload)
                     setattr(new_user, "studio_name", clean_studio)
-                    setattr(
-                        new_user,
-                        "biography",
-                        "No corporate profile log attached yet.",
-                    )
-                    setattr(
-                        new_user,
-                        "profile_picture_name",
-                        st.session_state["reg_avatar_filename"],
-                    )
+                    setattr(new_user, "biography", "No corporate profile log attached yet.")
+                    
+                    # ✅ FIXED: Now default users are registered with your exact custom local file path asset token!
+                    if st.session_state["reg_avatar_filename"] == "default_profile.png":
+                        setattr(new_user, "profile_picture_name", "images/avatar.png")
+                    else:
+                        setattr(new_user, "profile_picture_name", st.session_state["reg_avatar_filename"])
 
-                    # Force database update commands
                     db_session.add(new_user)
                     db_session.commit()
+
 
                     st.success(
                         "🎉 Account compiled successfully! Redirecting to login panel..."
