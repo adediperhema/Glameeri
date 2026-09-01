@@ -78,7 +78,7 @@ def verify_generation_allowance(
     tier_key = str(current_tier).strip().lower()
 
     if tier_key == "freemium":
-        allotted_limit = 200
+        allotted_limit = 500
         if current_usage_count >= allotted_limit:
             # Returns is_authorized=False, is_expired=True to force a hard payment gate wall!
             return (
