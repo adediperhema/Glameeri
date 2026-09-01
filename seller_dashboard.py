@@ -15,7 +15,8 @@ from time import (
 
 
 def render_seller_dashboard_suite(db, token_user_id):
-    st.markdown("## 📈 Artisan Merchant & Shop Dashboard Center")
+
+    # st.markdown("## 📈 Artisan Merchant & Shop Dashboard Center")
 
     # -------------------------------------------------------------------
     # PART A: MERCHANT BRAND PROFILE METADATA SECTION
@@ -26,7 +27,12 @@ def render_seller_dashboard_suite(db, token_user_id):
     # -------------------------------------------------------------------
     # PART A: MERCHANT BRAND PROFILE METADATA SECTION
     # -------------------------------------------------------------------
-    st.markdown("### 🏷️ Designer Brand Profile Registry")
+    st.markdown(
+        "<h1 style='font-size: 19px; font-weight: bold;'>🏷️ Designer Brand Profile Registry</h1>",
+        unsafe_allow_html=True,
+    )
+
+    # st.markdown("### 🏷️ Designer Brand Profile Registry")
 
     # Force a database query fetch
     raw_profile = (
@@ -109,12 +115,35 @@ def render_seller_dashboard_suite(db, token_user_id):
     # -------------------------------------------------------------------
     # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
     # -------------------------------------------------------------------
-    st.markdown("### 📊 Live Analytics & Creative Financial Performance Insights")
+    # -------------------------------------------------------------------
+    # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
+    # -------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
+    # -------------------------------------------------------------------
+    st.markdown(
+        "<h1 style='font-size: 17px; font-weight: bold;'>Live Analytics & Financial Performance Insights</h1>",
+        unsafe_allow_html=True,
+    )
 
-    # Fetch realized order data nodes tied explicitly to this seller's identity parameters
+    # st.markdown("### 📊 Live Analytics & Financial Performance Insights")
+
+    # 🔥 FIX: Direct local inline imports instantly clear the red text lines!
+    from typing import Any
+    from sqlalchemy import and_
+    import database  # Import the root module to bypass aliased lookup lags
+
+    # Pull the exact table object reference directly from your database module fields
+    safe_order_model: Any = getattr(database, "Order")
+
     completed_sales = (
-        db.query(Order)
-        .filter(Order.seller_id == token_user_id, Order.status == "paid")
+        db.query(safe_order_model)
+        .filter(
+            and_(
+                getattr(safe_order_model, "seller_id") == token_user_id,
+                getattr(safe_order_model, "status") == "paid",
+            )
+        )
         .all()
     )
 
@@ -170,7 +199,12 @@ def render_seller_dashboard_suite(db, token_user_id):
     )
 
     # AUTOMATED STRATEGIC ADVISORY SUITE Engine
-    st.markdown("#### 💡 Automated AI Retail Advisor Integration")
+    st.markdown(
+        "<h1 style='font-size: 19px; font-weight: bold;'>💡 Automated AI Retail Advisor Integration</h1>",
+        unsafe_allow_html=True,
+    )
+
+    # st.markdown("#### 💡 Automated AI Retail Advisor Integration")
     total_sales_volume = df_insights["Items Sold"].sum()
     if total_sales_volume < 10:
         st.info(
@@ -186,7 +220,12 @@ def render_seller_dashboard_suite(db, token_user_id):
     # -------------------------------------------------------------------
     # PART C: COMMERCIAL SPECIFICATIONS CONFIGURATOR DRAFT BAR
     # -------------------------------------------------------------------
-    st.markdown("### 📦 Product Workspace Staging & Commercial Pricing Console")
+    st.markdown(
+        "<h1 style='font-size: 21px; font-weight: bold;'>📦 Product Workspace Staging & Commercial Pricing Console</h1>",
+        unsafe_allow_html=True,
+    )
+
+    # st.markdown("### 📦 Product Workspace Staging & Commercial Pricing Console")
     st.write(
         "Modify pricing parameters, set target currencies, and deploy lookbook outputs to the live marketplace:"
     )
@@ -210,13 +249,37 @@ def render_seller_dashboard_suite(db, token_user_id):
 
             with c_preview:
                 st.markdown(f"#### {listing.title}")
-                # Render visual byte arrays directly out of local schema storage layers
+                synchronized_image_string = ""
+
+                # Render visual byte arrays directly out of local hex schema storage layers
                 try:
-                    img_data_hex = json.loads(listing.raw_images_blob.decode("utf-8"))
-                    if img_data_hex:
-                        st.image(
-                            bytes.fromhex(img_data_hex[0]), use_container_width=True
+                    if (
+                        hasattr(listing, "raw_images_blob")
+                        and listing.raw_images_blob is not None
+                    ):
+                        img_data_hex = json.loads(
+                            listing.raw_images_blob.decode("utf-8")
                         )
+                        if isinstance(img_data_hex, list) and len(img_data_hex) > 0:
+                            target_hex = img_data_hex[0]
+                        else:
+                            target_hex = str(img_data_hex)
+
+                        raw_binary_bytes = bytes.fromhex(target_hex)
+
+                        # =========================================================================
+                        # 🪡 FIX: FORCE AN INLINE IMPORT OF BASE64 TO INSTANTLY ERASE THE RED TEXT 🪡
+                        # =========================================================================
+                        import base64
+
+                        encoded_b64_stream = base64.b64encode(raw_binary_bytes).decode(
+                            "utf-8"
+                        )
+
+                        synchronized_image_string = (
+                            f"data:image/jpeg;base64,{encoded_b64_stream}"
+                        )
+                        st.image(raw_binary_bytes, use_container_width=True)
                 except Exception:
                     st.caption("No image template attached to listing row.")
 
@@ -248,40 +311,58 @@ def render_seller_dashboard_suite(db, token_user_id):
                             ),
                         )
 
+                    # MATERIAL TYPE CLASSIFICATION DROPDOWN CONFIGURATOR
+                    current_material_status = (
+                        "Fabric Raw Material (Standard Swatch Display)"
+                        if getattr(listing, "is_fabric_type", False)
+                        else "Sown Material (Appends Try-On Module)"
+                    )
+                    product_material_classification = st.selectbox(
+                        "Apparel Material Structure Classification:",
+                        options=[
+                            "Sown Material (Appends Try-On Module)",
+                            "Fabric Raw Material (Standard Swatch Display)",
+                        ],
+                        index=0 if "Sown" in current_material_status else 1,
+                        key=f"material_class_selector_{listing.id}_{idx}",
+                    )
+
                     edited_notes = st.text_area(
                         "Search Meta Notes / SEO Target Attributes (Tags):",
                         value=listing.notes or "",
-                        placeholder="e.g. Ankara Wax, breathable summer dress, casual top...",
                     )
                     edited_desc = st.text_area(
                         "Detailed Consumer Product Profile:", value=listing.description
                     )
 
-                    b1, b2, b3 = st.columns(3)
+                    # Group actions horizontally side-by-side on the exact same row sector
+                    b1, b2, b3, b4 = st.columns(4)
                     with b1:
-                        save_draft = st.form_submit_button("💾 Update Parameters")
+                        save_draft = st.form_submit_button("💾 Update")
                     with b2:
                         push_live = st.form_submit_button(
-                            "🚀 Deploy Live to Shop", type="primary"
+                            "🚀 Deploy Live", type="primary"
                         )
                     with b3:
-                        pull_down = st.form_submit_button("🔒 Revert to Draft")
+                        pull_down = st.form_submit_button("🔒 Revert Draft")
+                    with b4:
+                        delete_item_cta = st.form_submit_button("🗑️ Delete")
 
                     if save_draft:
                         clean_title = str(edited_title).strip()
                         clean_notes = str(edited_notes).strip()
                         clean_desc = str(edited_desc).strip()
+                        is_fabric_flag = "Fabric" in product_material_classification
 
                         setattr(listing, "title", clean_title)
                         setattr(listing, "price", float(edited_price))
                         setattr(listing, "currency", str(edited_currency))
                         setattr(listing, "notes", clean_notes)
                         setattr(listing, "description", clean_desc)
+                        setattr(listing, "is_fabric_type", is_fabric_flag)
 
                         db.commit()
                         st.success("Listing configurations synchronized locally!")
-
-                        # 🔥 THE EXACT FIX: Inline module fetching completely erases the red 'time.sleep(' text error
                         __import__("time").sleep(0.3)
                         st.rerun()
 
@@ -294,6 +375,7 @@ def render_seller_dashboard_suite(db, token_user_id):
                             clean_title = str(edited_title).strip()
                             clean_notes = str(edited_notes).strip()
                             clean_desc = str(edited_desc).strip()
+                            is_fabric_flag = "Fabric" in product_material_classification
 
                             setattr(listing, "title", clean_title)
                             setattr(listing, "price", float(edited_price))
@@ -301,8 +383,9 @@ def render_seller_dashboard_suite(db, token_user_id):
                             setattr(listing, "notes", clean_notes)
                             setattr(listing, "description", clean_desc)
                             setattr(listing, "is_live_in_shop", True)
+                            setattr(listing, "is_fabric_type", is_fabric_flag)
 
-                            # CLONE STRUCTURAL ROW TO PUBLIC PRODUCT MARKETPLACE DISCOVERY TABLE
+                            # CLONE ROW TO PUBLIC PRODUCT MARKETPLACE DISCOVERY TABLE
                             listing_id_val = getattr(listing, "id", None)
                             existing_public_product = (
                                 db.query(Product)
@@ -310,14 +393,21 @@ def render_seller_dashboard_suite(db, token_user_id):
                                 .first()
                             )
 
+                            # If hex conversions fell short, fallback to global profile avatar cache configurations
+                            if not synchronized_image_string:
+                                synchronized_image_string = st.session_state.get(
+                                    "cached_merchant_avatar_b64", ""
+                                )
+
                             if not existing_public_product:
                                 public_listing = Product(
-                                    id=listing_id_val,  # Maintain primary tracking synchronization hooks
+                                    id=listing_id_val,
                                     seller_id=token_user_id,
                                     title=clean_title,
                                     description=clean_desc,
                                     price=float(edited_price),
-                                    is_fabric=False,  # Explicitly marks item as TryOn Eligible apparel [3]
+                                    is_fabric=is_fabric_flag,  # False = Sown Material TryOn, True = Fabric Swatch
+                                    image_url=synchronized_image_string,
                                     notes=clean_notes,
                                 )
                                 db.add(public_listing)
@@ -332,40 +422,81 @@ def render_seller_dashboard_suite(db, token_user_id):
                                 setattr(
                                     existing_public_product, "description", clean_desc
                                 )
-                                setattr(existing_public_product, "is_fabric", False)
+                                setattr(
+                                    existing_public_product, "is_fabric", is_fabric_flag
+                                )
+                                setattr(
+                                    existing_public_product,
+                                    "image_url",
+                                    synchronized_image_string,
+                                )
 
                             db.commit()
                             st.success(
-                                f"✨ '{clean_title}' is now actively tracking live on the global marketplace storefront network!"
+                                f"✨ '{clean_title}' is now actively tracking live on the storefront!"
                             )
-
-                            # 🔥 ULTIMATE INLINE REPLACEMENT: Bypasses all variable name conflicts
-                            # This completely removes the red text on time.sleep(
                             __import__("time").sleep(0.4)
                             st.rerun()
 
                     if pull_down:
+                        # Revert status tracker parameter switches
                         setattr(listing, "is_live_in_shop", False)
                         listing_id_val = getattr(listing, "id", None)
+
                         public_product = (
                             db.query(Product)
                             .filter(Product.id == listing_id_val)
                             .first()
                         )
-
                         if public_product:
-                            db.delete(public_product)
+                            try:
+                                # 🪡 FIX: Safely delete associated cart order line references first to prevent crash constraints!
+                                db.query(Order).filter(
+                                    Order.product_id == listing_id_val
+                                ).delete()
+                                db.delete(public_product)
+                            except Exception as pull_err:
+                                db.rollback()
+                                st.error(
+                                    f"Failed to clear live item references: {pull_err}"
+                                )
+                                st.stop()
+
                         db.commit()
                         st.warning(
                             "Listing pulled from discovery storefront and reverted to draft status."
                         )
-
-                        # 🔥 ULTIMATE INLINE REPLACEMENT: Bypasses all variable name conflicts
-                        # This completely removes the red text on time.sleep(
                         __import__("time").sleep(0.4)
                         st.rerun()
 
-        st.markdown(
-            "<hr style='border:1px dashed #dadce0; margin:25px 0px;'>",
-            unsafe_allow_html=True,
-        )
+                        listing_id_val = getattr(listing, "id", None)
+
+                        # 1. Purge matching order lines first to prevent foreign key violations
+                        db.query(Order).filter(
+                            Order.product_id == listing_id_val
+                        ).delete()
+
+                        # 2. Clear out the public product storefront instance if it was deployed live
+                        public_product = (
+                            db.query(Product)
+                            .filter(Product.id == listing_id_val)
+                            .first()
+                        )
+                        if public_product:
+                            db.delete(public_product)
+
+                        # 3. Discard the core staging draft item row from your tracking ledger rows
+                        db.delete(listing)
+                        db.commit()
+
+                        st.error(
+                            "Staged item draft completely wiped from active memory registers."
+                        )
+
+                        # ✅ FIXED: Changed to standard inline module loading execution syntax
+                        __import__("time").sleep(0.4)
+                        st.rerun()
+                        db.close()
+                        st.stop()
+
+        st.divider()
