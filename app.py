@@ -1,10 +1,10 @@
 import io
-import sys
 import json
 import os
 import random
 import time
 from typing import Any
+from payhub_service import create_subscription_payhub_checkout_session
 
 import cv2
 import numpy as np
@@ -23,6 +23,10 @@ from functionalities import (
     saved_measurement,
     pdf_byte,
 )
+import cv2
+import numpy as np
+
+from cv2 import Sobel as cv2_Sobel
 
 # 🗄️ PostgreSQL Dynamic Hook Registries
 from database import (
@@ -33,7 +37,7 @@ from database import (
     ShopOrder,
     User,
     Base,
-    conn,
+    SessionLocal,
     hash_password,
 )
 import json
@@ -59,13 +63,47 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 1. Initialize the Streamlit SQL connection wrapper first
-#conn = st.connection("sql", url=DATABASE_URL)
+# conn = st.connection("sql", url=DATABASE_URL)
 
 # 2. Extract the raw SQLAlchemy engine correctly (No leading underscore!)
-engine = conn.engine
+# engine = conn.engine
 
 # 3. Spin up your traditional ORM session object using the engine
-db_session = Session(engine)
+# db_session = Session(engine)
+db_session = SessionLocal()
+# =========================================================================
+# 📸 LOCAL DISK OVERRIDE: AUTOMATED IMAGE_URL COLUMN CONVERSION RUNNER 📸
+# =========================================================================
+# This executes an inline ALTER command locally on your machine disk drive,
+# expanding your string limits to infinite character text size constraints instantly!
+# =========================================================================
+# 📸 LOCAL DISK OVERRIDE: AUTOMATED IMAGE_URL COLUMN CONVERSION RUNNER 📸
+# =========================================================================
+from typing import Any
+from sqlalchemy import text as sqlalchemy_text
+
+# =========================================================================
+# 📸 LOCAL POSTGRES OVERRIDE: AUTOMATED COLUMN TYPE ALTERATION RUNNER 📸
+# =========================================================================
+from typing import Any
+from sqlalchemy import text as sqlalchemy_text
+
+try:
+    # 1. Grab the base database Engine driver from the session context
+    local_postgres_engine: Any = db_session.get_bind()
+
+    # 2. Open a direct raw transaction gateway onto your local PostgreSQL machine server
+    with local_postgres_engine.connect() as local_db_conn:
+        # Force alter the column constraints on your local postgres server layout
+        local_db_conn.execute(
+            sqlalchemy_text("ALTER TABLE products ALTER COLUMN image_url TYPE TEXT;")
+        )
+        local_db_conn.commit()
+
+except Exception as schema_log_err:
+    # Bypasses silently if column rules are already configured to TEXT bounds
+    pass
+
 
 # Put this in a hidden admin section or at the very bottom of your app during setup
 # if st.button("Dev Tools: Sync Database Tables"):
@@ -82,6 +120,7 @@ from security import (
     get_password_hash,
     verify_password,
 )
+
 
 # =========================================================================
 # 🛡️ CRYPTOGRAPHIC SECURITY VERIFICATION SHIELD GATE (TOP OF APP.PY)
@@ -248,28 +287,28 @@ if query_params.get("payment_status") == "success" and "tier_upgrade" in query_p
 
     if auth_user_id_val > 0:
         # When you want to insert or update data, just use 'with conn.session'
-        with conn.session as db_sync:
-            # db_sync = SessionLocal()
-            try:
-                target_user_row = (
-                    db_sync.query(User).filter(User.id == auth_user_id_val).first()
+        # with conn.session as db_sync:
+        db_sync = SessionLocal()
+        try:
+            target_user_row = (
+                db_sync.query(User).filter(User.id == auth_user_id_val).first()
+            )
+            if target_user_row:
+                setattr(target_user_row, "subscription_tier", target_tier_token)
+                setattr(
+                    target_user_row, "monthly_generation_count", 0
+                )  # Clear generation blocks immediately!
+                db_sync.commit()
+                st.success(
+                    f"💳 Payment Verified via Stripe webhook payload! Workspace successfully unlocked and upgraded to '{target_tier_token.upper()}'."
                 )
-                if target_user_row:
-                    setattr(target_user_row, "subscription_tier", target_tier_token)
-                    setattr(
-                        target_user_row, "monthly_generation_count", 0
-                    )  # Clear generation blocks immediately!
-                    db_sync.commit()
-                    st.success(
-                        f"💳 Payment Verified via Stripe webhook payload! Workspace successfully unlocked and upgraded to '{target_tier_token.upper()}'."
-                    )
-                    st.query_params.clear()  # Clear address parameters out cleanly
-                    time.sleep(1.0)
-                    st.rerun()
-            except Exception as e:
-                db_sync.rollback()
-            finally:
-                db_sync.close()
+                st.query_params.clear()  # Clear address parameters out cleanly
+                time.sleep(1.0)
+                st.rerun()
+        except Exception as e:
+            db_sync.rollback()
+        finally:
+            db_sync.close()
 
 elif query_params.get("payment_status") == "attire_success":
     client_name_badge = str(query_params.get("client")).replace("_", " ")
@@ -280,11 +319,13 @@ elif query_params.get("payment_status") == "attire_success":
 
 
 # Check if the user session has been fully authenticated inside global state management
+# Check if the user session has been fully authenticated inside global state management
+# Check if the user session has been fully authenticated inside global state management
 if st.session_state.get("authenticated") == True:
 
     fallback_studio_name = "Premium Fashion House"
     user_session_id_val = st.session_state.get("user_session_id", 0)
-    
+
     current_user: Any = None
     token_studio_name: str = fallback_studio_name
     verified_email_log: str = "studio@volkoda.com"
@@ -298,17 +339,29 @@ if st.session_state.get("authenticated") == True:
                 db_session.query(User).filter(User.id == user_session_id_val).first()
             )
             if current_user:
-                token_studio_name = str(getattr(current_user, "studio_name", fallback_studio_name))
-                verified_email_log = str(getattr(current_user, "email", "studio@volkoda.com"))
-                verified_bio_log = str(getattr(current_user, "biography", "No corporate profile logs attached."))
-                active_avatar_name = str(getattr(current_user, "profile_picture_name", "default_profile.png"))
+                token_studio_name = str(
+                    getattr(current_user, "studio_name", fallback_studio_name)
+                )
+                verified_email_log = str(
+                    getattr(current_user, "email", "studio@volkoda.com")
+                )
+                verified_bio_log = str(
+                    getattr(
+                        current_user, "biography", "No corporate profile logs attached."
+                    )
+                )
+                active_avatar_name = str(
+                    getattr(current_user, "profile_picture_name", "default_profile.png")
+                )
     except Exception as query_error:
         st.sidebar.error(f"Profile recovery bottleneck: {query_error}")
     finally:
         db_session.close()  # Now it is completely safe to close the database session
 
     active_studio_title: str = str(token_studio_name)
-    avatar_render_source_url = "https://unsplash.com" # High fashion default fallback image
+    avatar_render_source_url = (
+        "https://unsplash.com"  # High fashion default fallback image
+    )
 
     # =========================================================================
     # 🪡 FIX 2: BASE64 CLOUD STRING INTERPRETATION LOGIC (NO DISK CHECKS) 🪡
@@ -324,9 +377,16 @@ if st.session_state.get("authenticated") == True:
                 try:
                     with open(local_avatar_disk_path, "rb") as image_file:
                         import base64
+
                         raw_b64_bytes = base64.b64encode(image_file.read())
-                        clean_b64_string = raw_b64_bytes.decode("utf-8").replace("\n", "").replace("\r", "")
-                        avatar_render_source_url = f"data:image/png;base64,{clean_b64_string}"
+                        clean_b64_string = (
+                            raw_b64_bytes.decode("utf-8")
+                            .replace("\n", "")
+                            .replace("\r", "")
+                        )
+                        avatar_render_source_url = (
+                            f"data:image/png;base64,{clean_b64_string}"
+                        )
                 except Exception:
                     pass
 
@@ -401,7 +461,7 @@ if st.session_state.get("authenticated") == True:
             "📁 Fabric Collection Manager",
             "📏 Saved Measurements Ledger",
             "🌟 Collection Lookbook Portfolio",
-            "📊 Analytical Orders Ledger",
+            "📈 Merchant & Shop Dashboard ",
             "🛒 Marketplace",
             "👤 Edit Studio Profile",
             "💰 Subscription Pricing Plan",
@@ -444,12 +504,13 @@ if st.session_state.get("authenticated") == True:
 
     # Lower down in your active view panel router, your call execution works flawlessly:
     if sidebar_selection == "🎨 Production Designer Canvas ":
+
         st.title("🎨 3D Surface Try-On Imprinter Engine")
 
         if is_expired:
             st.error(restriction_msg)
             st.info(
-                "💡 Pro Tip: Your store dashboard features remain active. Head over to the '📊 Analytical Orders Ledger' menu module to continue managing your sales transactions or upgrade below."
+                "💡 Pro Tip: Your store dashboard features remain active. Head over to the '📈 Merchant & Shop Dashboard ' menu module to continue managing your sales transactions or upgrade below."
             )
 
             # 🔥 FIX 2: The red underline on render_pricing_matrix_panel vanishes forever because the pointer path is open!
@@ -531,13 +592,17 @@ if st.session_state.get("authenticated") == True:
     # This guarantees to the linter that the payload is a dictionary, clearing the red lines instantly.
     if verified_payload is not None and isinstance(verified_payload, dict):
         token_user_id: int = int(verified_payload.get("sub", 0))
-        token_studio_name: str = str(verified_payload.get("studio", "Glameeri Atelier"))
-        token_user_email: str = str(verified_payload.get("email", "studio@volkoda.com"))
+        token_studio_name: str = str(
+            verified_payload.get("studio", "Glameeri Designer")
+        )
+        token_user_email: str = str(
+            verified_payload.get("email", "studio@glameeri.com")
+        )
     else:
         # Fallback parameters applied safely if tokens degrade or expire mid-session
         token_user_id = int(st.session_state.get("user_session_id", 0))
         token_studio_name = "Premium Fashion House"
-        token_user_email = "studio@volkoda.com"
+        token_user_email = "studio@glameeri.com"
 
     # =========================================================================
     # 🧭 UPDATED SIDEBAR WORKSPACE OPTION CONTROLLER (INDEX4.PY)
@@ -564,79 +629,127 @@ else:
 # =========================================================================
 if sidebar_selection == "👤 Edit Studio Profile":
     ##############
+    # 1. Establish the precise filesystem track path pointing to your local logo file
+    local_logo_disk_path = os.path.join("images", "fashion_logo1_nobg.png")
 
-            # THE EDITABLE ACCOUNT FORM DATA MATRIX SECTION
-            st.markdown("### 📝 Modify Account Details")
-            
-            # FIX 1: We use a SINGLE cohesive form block for both the inputs and the submit button
-            with st.form("edit_profile_form_matrix"):
-                
-                # FIX 2: Added explicit 'key' strings that match exactly what your submission logic looks for!
-                edit_studio_name = st.text_input(
-                    "Edit Studio / Atelier Display Title Name:",
-                    value=current_user.studio_name,
-                    key="profile_edit_field_name"  # <-- Critical Key
+    # Authoritative high-fashion fallback image link deployed if your local disk asset is missing
+    navbar_logo_render_url = "https://unsplash.com"
+
+    # 2. Pull image bytes and convert to a clean single-line Base64 format to bypass cross-origin blocks
+    if os.path.exists(local_logo_disk_path):
+        try:
+            with open(local_logo_disk_path, "rb") as logo_bytes_file:
+                import base64
+
+                encoded_logo_b64 = base64.b64encode(logo_bytes_file.read())
+
+                # Match the exact name used on BOTH lines to clear the red text error!
+                clean_logo_b64_string = (
+                    encoded_logo_b64.decode("utf-8").replace("\n", "").replace("\r", "")
                 )
-                
-                edit_biography = st.text_area(
-                    "Edit Studio Biography / Specialization Profile Log:",
-                    value=current_user.biography,
-                    key="profile_edit_field_bio"   # <-- Critical Key
+                navbar_logo_render_url = (
+                    f"data:image/jpeg;base64,{clean_logo_b64_string}"
                 )
-                
-                update_pfp = st.file_uploader(
-                    "Replace Profile Picture File Asset (Optional):",
-                    type=["png", "jpg", "jpeg"],
+        except Exception:
+            pass
+
+        # 3. COMPRESS THE NAVBAR PAYLOAD INSIDE PARENTHESES TO ERASE RAW CODE TEXT GATES
+        navbar_branding_html_payload = (
+            "<style>"
+            "  .vk-navbar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; padding: 14px 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: sans-serif; }"
+            "  .vk-navbar-logo-img { width: auto; max-height: 60px; object-fit: contain; border-radius: 6px; }"
+            "  .brand-text-wrapper { flex-grow: 1; text-align: center; margin-right: 60px; }"
+            "  .brand-tagline { font-size: 16px; font-weight: 600; color: #E05A47; text-transform: uppercase; letter-spacing: 1px; }"
+            "</style>"
+            "<div class='vk-navbar'>"
+            f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='AfriTextile Core Branding Logo'/>"
+            "   <div class='brand-text-wrapper'>"
+            "       <span class='brand-tagline'>AI Fashion innovation Studio</span>"
+            "   </div>"
+            "</div>"
+        )
+
+        # Force the markdown engine to interpret the payload as native web node parameters
+        st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
+
+    # THE EDITABLE ACCOUNT FORM DATA MATRIX SECTION
+    st.markdown(
+        "<h1 style='font-size: 24px; font-weight: bold;'>📝 Modify Account Details</h1>",
+        unsafe_allow_html=True,
+    )
+
+    # st.markdown("### 📝 Modify Account Details")
+
+    # FIX 1: We use a SINGLE cohesive form block for both the inputs and the submit button
+    with st.form("edit_profile_form_matrix"):
+
+        # FIX 2: Added explicit 'key' strings that match exactly what your submission logic looks for!
+        edit_studio_name = st.text_input(
+            "Edit Studio / Designer Display Title Name:",
+            value=current_user.studio_name,
+            key="profile_edit_field_name",  # <-- Critical Key
+        )
+
+        edit_biography = st.text_area(
+            "Edit Studio Biography / Specialization Profile Log:",
+            value=current_user.biography,
+            key="profile_edit_field_bio",  # <-- Critical Key
+        )
+
+        update_pfp = st.file_uploader(
+            "Replace Profile Picture File Asset (Optional):",
+            type=["png", "jpg", "jpeg"],
+        )
+
+        # Place the submit button cleanly inside the single form container
+        submit_button = st.form_submit_button("💾 Save Profile Data Changes")
+
+    # =========================================================================
+    # 🪡 FIX 3: RESTRUCTURED LOGIC TRIGGER (RUNS ON SUBMIT) 🪡
+    # =========================================================================
+    if submit_button:
+        # Grab the cleaned values directly from session state variables now that the keys match
+        clean_edit_name = str(
+            st.session_state.get("profile_edit_field_name", "")
+        ).strip()
+        clean_edit_bio = str(st.session_state.get("profile_edit_field_bio", "")).strip()
+
+        if not clean_edit_name:
+            st.error("❌ Alteration Denied: Studio Name cannot be empty.")
+        else:
+            try:
+                active_user_id = st.session_state.get("user_session_id", 0)
+                db_user = (
+                    db_session.query(User).filter(User.id == active_user_id).first()
                 )
 
-                # Place the submit button cleanly inside the single form container
-                submit_button = st.form_submit_button("💾 Save Profile Data Changes")
+                if db_user:
+                    # 1. Update text attributes using type-safe setattr patterns
+                    setattr(db_user, "studio_name", clean_edit_name)
+                    setattr(db_user, "biography", clean_edit_bio)
 
-            # =========================================================================
-            # 🪡 FIX 3: RESTRUCTURED LOGIC TRIGGER (RUNS ON SUBMIT) 🪡
-            # =========================================================================
-            if submit_button:
-                # Grab the cleaned values directly from session state variables now that the keys match
-                clean_edit_name = str(st.session_state.get("profile_edit_field_name", "")).strip()
-                clean_edit_bio = str(st.session_state.get("profile_edit_field_bio", "")).strip()
+                    # 2. OPTIONAL: Handle Avatar Upload directly into our persistent Base64 string row!
+                    if update_pfp is not None:
+                        import base64
 
-                if not clean_edit_name:
-                    st.error("❌ Alteration Denied: Studio Name cannot be empty.")
-                else:
-                    try:
-                        active_user_id = st.session_state.get("user_session_id", 0)
-                        db_user = (
-                            db_session.query(User)
-                            .filter(User.id == active_user_id)
-                            .first()
-                        )
+                        pfp_bytes = update_pfp.getvalue()
+                        encoded_pfp = base64.b64encode(pfp_bytes).decode("utf-8")
+                        clean_b64_string = f"data:image/jpeg;base64,{encoded_pfp}"
+                        setattr(db_user, "profile_picture_name", clean_b64_string)
 
-                        if db_user:
-                            # 1. Update text attributes using type-safe setattr patterns
-                            setattr(db_user, "studio_name", clean_edit_name)
-                            setattr(db_user, "biography", clean_edit_bio)
+                    # 3. Save updates permanently to Supabase cloud
+                    db_session.commit()
 
-                            # 2. OPTIONAL: Handle Avatar Upload directly into our persistent Base64 string row!
-                            if update_pfp is not None:
-                                import base64
-                                pfp_bytes = update_pfp.getvalue()
-                                encoded_pfp = base64.b64encode(pfp_bytes).decode("utf-8")
-                                clean_b64_string = f"data:image/jpeg;base64,{encoded_pfp}"
-                                setattr(db_user, "profile_picture_name", clean_b64_string)
+                    st.success(
+                        "🎉 Studio profile data altered and synced securely to Supabase!"
+                    )
+                    time.sleep(0.5)
+                    st.rerun()
 
-                            # 3. Save updates permanently to Supabase cloud
-                            db_session.commit()
-                            
-                            st.success("🎉 Studio profile data altered and synced securely to Supabase!")
-                            time.sleep(0.5)
-                            st.rerun()
-
-                    except Exception as db_err:
-                        db_session.rollback()
-                        st.error(f"Cloud update framework sync failure: {db_err}")
-            st.markdown("</div>", unsafe_allow_html=True)
-            st.stop()  # Halts drawing right here to hide background try-on canvas modules cleanly
-
+            except Exception as db_err:
+                db_session.rollback()
+                st.error(f"Cloud update framework sync failure: {db_err}")
+    st.stop()
 
 # Safe initialization for collection records array bucket memory slots
 if "studio_collections" not in st.session_state:
@@ -705,10 +818,15 @@ if sidebar_selection == "📁 Fabric Collection Manager":
 
     ##############
     st.markdown('<div class="vk-card">', unsafe_allow_html=True)
+    # st.markdown(
+    #    '<p class="vk-section-header">📁 Fabric Collection Workspace Manager</p>',
+    #    unsafe_allow_html=True,
+    # )
     st.markdown(
-        '<p class="vk-section-header">📁 Fabric Collection Workspace Manager</p>',
+        "<h1 style='font-size: 17px; font-weight: bold;'>📁 Fabric Collection Workspace </h1>",
         unsafe_allow_html=True,
     )
+
     st.write(
         "Onboard new textile print lines, upload master batch swatches, and track active production inventory items below:"
     )
@@ -720,7 +838,12 @@ if sidebar_selection == "📁 Fabric Collection Manager":
 
     # --- SUB-SECTION 1: THE COLLECTION INTAKE HUB CREATOR ---
     with layout_creator_panel:
-        st.markdown("### 📥 Onboard Collection Roll")
+        st.markdown(
+            "<h1 style='font-size: 17px; font-weight: bold;'>📥 Onboard Collection Roll</h1>",
+            unsafe_allow_html=True,
+        )
+
+        # st.markdown("### 📥 Onboard Collection Roll")
         with st.form("create_collection_form", clear_on_submit=True):
             new_coll_title = st.text_input(
                 "Collection Reference Title / Group Tag Name:",
@@ -795,7 +918,12 @@ if sidebar_selection == "📁 Fabric Collection Manager":
     # --- 🔥 THE SPECIFIC CORRECTION: SHIFTED ALL THE WAY BACK TO FLUSH RIGHT UNDER THE GENERATOR COLUMNS 🔥 ---
     # Moving this out of the 'if submit_btn:' logic allows it to render continuously on your page viewport!
     with layout_gallery_panel:
-        st.markdown("### 🖼️ Live Workshop Swatch Gallery")
+        st.markdown(
+            "<h1 style='font-size: 17px; font-weight: bold;'>🖼️ Live Workshop Swatch Gallery</h1>",
+            unsafe_allow_html=True,
+        )
+
+        # st.markdown("### 🖼️ Live Workshop Swatch Gallery")
 
         # Connect to server and filter collections exclusively belonging to this logged-in tailor session
         # db = SessionLocal()
@@ -863,27 +991,28 @@ if sidebar_selection == "📁 Fabric Collection Manager":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-            # ---------------------------------------------------------------------
-        # 🚀 NEW NAVIGATION BUTTON: LINKS DYNAMICALLY TO THE PORTFOLIO PAGE 🚀
-        # ---------------------------------------------------------------------
+    # ---------------------------------------------------------------------
+    # 🚀 NEW NAVIGATION BUTTON: LINKS DYNAMICALLY TO THE PORTFOLIO PAGE 🚀
+    # ---------------------------------------------------------------------
     if st.button(
-        "👁️ View Onboarded Assets inside Lookbook Portfolio ➔", 
+        "👁️ View Onboarded Assets inside Lookbook Portfolio ➔",
         key="fabric_manager_to_portfolio_redirect_cta",
         type="secondary",
-        use_container_width=True
+        use_container_width=True,
     ):
-        st.session_state["sidebar_selection_state_key"] = "🌟 Collection Lookbook Portfolio"
-        __import__('time').sleep(0.1)
+        # Update the state routing target string pointer variable
+        st.session_state["active_sidebar_tab"] = "🌟 Collection Lookbook Portfolio"
+        # sidebar_selection_state_key
+
+        # Execute a clean module reload pass to force the layout view to update instantly
+        __import__("time").sleep(0.1)
         st.rerun()
 
-    # 🔥 THE EXACT POSITION: Place this at the very end of the Fabric Manager branch.
-    # It must be indented by exactly 4 spaces (aligned with the button, not inside it).
-    st.markdown("</div>", unsafe_allow_html=True)
+    # 🔥 FIXED: Removed the stray standalone st.stop() that was freezing your script timeline!
+    # The code can now drop down naturally to evaluate the rest of your dashboard modules.
+
+    st.markdown('<div class="vk-card">', unsafe_allow_html=True)
     st.stop()
-        # 🔥 FIXED: Removed the stray standalone st.stop() that was freezing your script timeline!
-        # The code can now drop down naturally to evaluate the rest of your dashboard modules.
-
-
 
 
 # =========================================================================
@@ -905,6 +1034,7 @@ elif sidebar_selection == "🛒 Marketplace":
         try:
             with open(local_logo_disk_path, "rb") as logo_bytes_file:
                 import base64
+
                 encoded_logo_b64 = base64.b64encode(logo_bytes_file.read())
                 clean_logo_b64_string = (
                     encoded_logo_b64.decode("utf-8").replace("\n", "").replace("\r", "")
@@ -924,24 +1054,30 @@ elif sidebar_selection == "🛒 Marketplace":
         "  .brand-tagline { font-size: 16px; font-weight: 600; color: #E05A47; text-transform: uppercase; letter-spacing: 1px; }"
         "</style>"
         "<div class='vk-navbar'>"
-        f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='AfriTextile Core Branding Logo'/>"
+        f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='Glameeri Core Branding Logo'/>"
         "   <div class='brand-text-wrapper'>"
-        "       <span class='brand-tagline'>AI Fashion innovation Studio</span>"
+        "       <span class='brand-tagline'>AI Fashion Innovation Studio</span>"
         "   </div>"
         "</div>"
     )
     st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
 
-    # 4. FETCH LOGGED-IN IDENTITY ATTRIBUTES 
+    # 4. FETCH LOGGED-IN IDENTITY ATTRIBUTES
     token_user_id = st.session_state.get("user_session_id", 1)
 
     # =========================================================================
     # 🚀 STEP 5: CONDITIONAL SYNC BRAND IDENTITIES HEADER ENGINE 🚀
     # =========================================================================
     if st.session_state.get("step3_broadcast_profile_parameters", False):
-        m_name = st.session_state.get("cached_merchant_studio_name", "AfriTextile Artisan Label")
-        m_bio = st.session_state.get("cached_merchant_biography", "No public studio overview logged yet.")
-        m_img = st.session_state.get("cached_merchant_avatar_b64", "https://unsplash.com")
+        m_name = st.session_state.get(
+            "cached_merchant_studio_name", "AfriTextile Artisan Label"
+        )
+        m_bio = st.session_state.get(
+            "cached_merchant_biography", "No public studio overview logged yet."
+        )
+        m_img = st.session_state.get(
+            "cached_merchant_avatar_b64", "https://unsplash.com"
+        )
 
         st.markdown(
             f"""
@@ -956,29 +1092,80 @@ elif sidebar_selection == "🛒 Marketplace":
                 </div>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
     # 6. LAUNCH THE COMPREHENSIVE MARKETPLACE INVENTORY MODULE
     from shop_page import render_marketplace_hub
-    
+
     # Pass the database session context and active user keys directly
     render_marketplace_hub(db_session, token_user_id)
-    
+
     db_session.close()
-    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
+
     # =========================================================================
 # elif sidebar_selection == "🖼️ Interactive Portfolio Gallery":
 elif sidebar_selection == "🌟 Collection Lookbook Portfolio":
+    ##############
+    # 1. Establish the precise filesystem track path pointing to your local logo file
+    local_logo_disk_path = os.path.join("images", "fashion_logo1_nobg.png")
+
+    # Authoritative high-fashion fallback image link deployed if your local disk asset is missing
+    navbar_logo_render_url = "https://unsplash.com"
+
+    # 2. Pull image bytes and convert to a clean single-line Base64 format to bypass cross-origin blocks
+    if os.path.exists(local_logo_disk_path):
+        try:
+            with open(local_logo_disk_path, "rb") as logo_bytes_file:
+                import base64
+
+                encoded_logo_b64 = base64.b64encode(logo_bytes_file.read())
+
+                # Match the exact name used on BOTH lines to clear the red text error!
+                clean_logo_b64_string = (
+                    encoded_logo_b64.decode("utf-8").replace("\n", "").replace("\r", "")
+                )
+                navbar_logo_render_url = (
+                    f"data:image/jpeg;base64,{clean_logo_b64_string}"
+                )
+        except Exception:
+            pass
+
+        # 3. COMPRESS THE NAVBAR PAYLOAD INSIDE PARENTHESES TO ERASE RAW CODE TEXT GATES
+        navbar_branding_html_payload = (
+            "<style>"
+            "  .vk-navbar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; padding: 14px 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: sans-serif; }"
+            "  .vk-navbar-logo-img { width: auto; max-height: 60px; object-fit: contain; border-radius: 6px; }"
+            "  .brand-text-wrapper { flex-grow: 1; text-align: center; margin-right: 60px; }"
+            "  .brand-tagline { font-size: 16px; font-weight: 600; color: #E05A47; text-transform: uppercase; letter-spacing: 1px; }"
+            "</style>"
+            "<div class='vk-navbar'>"
+            f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='AfriTextile Core Branding Logo'/>"
+            "   <div class='brand-text-wrapper'>"
+            "       <span class='brand-tagline'>AI Fashion innovation Studio</span>"
+            "   </div>"
+            "</div>"
+        )
+
+        # Force the markdown engine to interpret the payload as native web node parameters
+        st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
+
     st.markdown('<div class="vk-card">', unsafe_allow_html=True)
+    # st.markdown(
+    #    '<p class="vk-section-header">🌟 Artisan Studio Row Lookbook Portfolio</p>',
+    #    unsafe_allow_html=True,
+    # )
     st.markdown(
-        '<p class="vk-section-header">🌟 Artisan Studio Row Lookbook Portfolio</p>',
+        "<h1 style='font-size: 19px; font-weight: bold;'>🌟 Collection Lookbook Portfolio</h1>",
         unsafe_allow_html=True,
     )
+
     st.write(
-        "Browse your design drafts, client lookbooks, and textile rolls. Click the inspect button on any asset card to launch its item profile detail workbook modal:"
+        "These are your design drafts, client lookbooks, and textile rolls. Click the inspect button on any asset card to launch its item profile detail:"
     )
+
+    #  "These are your design drafts, client lookbooks, and textile rolls. Click the inspect button on any asset card to launch its item profile detail workbook modal:"
 
     import json
     from typing import Any, cast
@@ -1286,14 +1473,23 @@ elif sidebar_selection == "📏 Saved Measurements Ledger":
     # -------------------------------------------------------------------------
     # 🔥 LIVE QUERY VIEPORT GATE: RENDERS ALL SAVED RECORDS TO THE SCREEN 🔥
     # -------------------------------------------------------------------------
-    st.markdown("### 🖼️ Live Studio Specification Records")
+    st.markdown(
+        "<h1 style='font-size: 17px; font-weight: bold;'>🖼️ Live Studio Specification Records</h1>",
+        unsafe_allow_html=True,
+    )
+
     live_studio(db_session)
 
     # =========================================================================
     # 🧵 CONTINUATION CORE: RELATIONAL DATA LOOP & PURGE MECHANICS (INDEX4.PY) 🧵
     # =========================================================================
 
-    st.write("#### 📜 Documented Customer Specifications Summary Rows:")
+    st.markdown(
+        "<h1 style='font-size: 17px; font-weight: bold;'>📜 Documented Customer Specifications Summary Records:</h1>",
+        unsafe_allow_html=True,
+    )
+
+    # st.write("#### 📜 Documented Customer Specifications Summary Rows:")
 
     # --- SUB-INJECTION B: HISTORICAL DATA ROW SCANNER GENERATION ---
     user_session_id_val = st.session_state.get("user_session_id", 0)
@@ -1330,7 +1526,7 @@ elif sidebar_selection == "📏 Saved Measurements Ledger":
                         f"""
                             <div style='background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; margin-bottom:14px; font-family:sans-serif;'>
                                 <div style='display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:8px; margin-bottom:10px;'>
-                                    <span style='font-size:16px; font-weight:700; color:#1e293b;'>👤 Client: {c_name}</span>
+                                    <span style='font-size:14px; font-weight:700; color:#1e293b;'>👤 Client: {c_name}</span>
                                     <span style='font-size:12px; color:#64748b;'>🗓️ Logged: {time_stamp}</span>
                                 </div>
                                 <div style='display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; font-size:13px; color:#475569;'>
@@ -1404,15 +1600,13 @@ elif sidebar_selection == "📏 Saved Measurements Ledger":
 
 # 📊 COMMERCIAL STOREFRONT REVENUE LEDGER & METRICS ENGINE
 # =========================================================================
-elif sidebar_selection == "📊 Analytical Orders Ledger":
-    ##############
+elif sidebar_selection == "📈 Merchant & Shop Dashboard ":
+
     # 1. Establish the precise filesystem track path pointing to your local logo file
     local_logo_disk_path = os.path.join("images", "fashion_logo1_nobg.png")
 
-    # Authoritative high-fashion fallback image link deployed if your local disk asset is missing
     navbar_logo_render_url = "https://unsplash.com"
 
-    # 2. Pull image bytes and convert to a clean single-line Base64 format to bypass cross-origin blocks
     if os.path.exists(local_logo_disk_path):
         try:
             with open(local_logo_disk_path, "rb") as logo_bytes_file:
@@ -1428,7 +1622,6 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
         except Exception:
             pass
 
-    # 3. COMPRESS THE NAVBAR PAYLOAD INSIDE PARENTHESES TO ERASE RAW CODE TEXT GATES
     navbar_branding_html_payload = (
         "<style>"
         "  .vk-navbar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; padding: 14px 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: sans-serif; }"
@@ -1445,17 +1638,21 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
     )
     st.markdown(navbar_branding_html_payload, unsafe_allow_html=True)
 
+    st.markdown(
+        "<h1 style='font-size: 21px; font-weight: bold;'>📈 Merchant & Shop Dashboard Center</h1>",
+        unsafe_allow_html=True,
+    )
+
     ##############
-    # 4. EXTRACT USER DATA FROM SUPABASE (READ STAGE RUNS BEFORE EXTRACTING MODULES)
-    from database import User
+    from database import User, Product
     from typing import Any, cast
 
     token_user_id = st.session_state.get("user_session_id", 0)
 
-    # Establish record variables safely outside of blocks
-    merchant_studio_name = "AfriTextile Artisan Label"
+    merchant_studio_name = "Glameeri Artisan Label"
     merchant_biography = "No public studio overview logged yet."
     merchant_profile_img = "default_profile.png"
+    merchant_email_val = "studio@glameeri.com"
 
     try:
         db_user_row = db_session.query(User).filter(User.id == token_user_id).first()
@@ -1470,18 +1667,90 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
             merchant_profile_img = str(
                 getattr(safe_user, "profile_picture_name", "default_profile.png")
             )
+            merchant_email_val = str(getattr(safe_user, "email", "studio@glameeri.com"))
     except Exception as db_err:
         st.error(f"Ledger metric sync warning: {db_err}")
 
     # =========================================================================
-    # STEP 5: RUN MAIN SELLER DASHBOARD MODULE SUITE FIRST (PLACED AT THE TOP)
+    # ⚙️ COLLAPSIBLE MANAGEMENT CONSOLE CONTAINER ⚙️
+    # =========================================================================
+    with st.expander(
+        "⚙️ Product Workspace Staging & Commercial Pricing Console", expanded=False
+    ):
+
+        with st.form("deploy_new_product_form"):
+            st.markdown("##### 📝 Configure and Deploy Custom Listing")
+            new_title = st.text_input("Product Title / Apparel Name:")
+            new_price = st.number_input(
+                "Listing Retail Price ($):", min_value=1.0, value=25.0, step=1.0
+            )
+            new_desc = st.text_area("Product Lookbook Description:")
+            new_notes = st.text_input(
+                "Search Tag Keywords (e.g. gown, silk, ankara):",
+                placeholder="e.g. Ankara, premium",
+            )
+
+            product_material_classification = st.selectbox(
+                "Select Material Structure Class Type:",
+                options=[
+                    "Sown Material (Appends Try-On Module)",
+                    "Fabric Raw Material (Standard Swatch Display)",
+                ],
+            )
+
+            new_product_file = st.file_uploader(
+                "Upload Product Storefront Image Asset:", type=["png", "jpg", "jpeg"]
+            )
+
+            deploy_btn = st.form_submit_button(
+                "🚀 Deploy Brand Product to Live Storefront"
+            )
+
+            if deploy_btn:
+                if not new_title:
+                    st.error("❌ Product title cannot be empty.")
+                elif not new_product_file:
+                    st.error("❌ Please upload a product storefront image asset.")
+                else:
+                    try:
+                        import base64
+
+                        uploaded_product_bytes = new_product_file.getvalue()
+                        encoded_prod = base64.b64encode(uploaded_product_bytes).decode(
+                            "utf-8"
+                        )
+                        clean_image_string = f"data:image/jpeg;base64,{encoded_prod}"
+
+                        is_fabric_flag = "Fabric" in product_material_classification
+
+                        new_item = Product(
+                            seller_id=token_user_id,
+                            title=new_title,
+                            description=new_desc,
+                            price=float(new_price),
+                            is_fabric=is_fabric_flag,
+                            image_url=clean_image_string,
+                            notes=new_notes,
+                        )
+
+                        db_session.add(new_item)
+                        db_session.commit()
+                        st.success(
+                            f"🎉 '{new_title}' cleanly deployed into your live storefront catalog!"
+                        )
+                        time.sleep(0.4)
+                        st.rerun()
+                    except Exception as e:
+                        db_session.rollback()
+                        st.error(f"Failed to submit apparel row: {e}")
+
+    # =========================================================================
+    # STEP 5 & 6: RUN MAIN SELLER DASHBOARD SUITE
+    # (The Delete Button is now nested dynamically right next to Revert to Draft inside!)
     # =========================================================================
     from seller_dashboard import render_seller_dashboard_suite
 
-    # Invoke your suite dashboard functions to handle layout grids and actions
     render_seller_dashboard_suite(db_session, token_user_id)
-
-    # Close database context cleanly right after our core widgets finish building
     db_session.close()
 
     st.markdown(
@@ -1489,9 +1758,6 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
         unsafe_allow_html=True,
     )
 
-    # =========================================================================
-    # STEP 6: RENDER SYNC TRACKER PANEL AT THE VERY BOTTOM OF THE PAGE
-    # =========================================================================
     st.markdown(
         '<div style="background-color:#ffffff; border:1px solid #e2e8f0; padding:20px; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); font-family:sans-serif;">',
         unsafe_allow_html=True,
@@ -1503,27 +1769,13 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
 
     prof_col1, prof_col2 = st.columns([1, 4], gap="medium")
     with prof_col1:
-        # Decodes your database Base64 avatar payload dynamically instead of looking for file folders
         avatar_render_source_url = "https://unsplash.com"
-
-        if merchant_profile_img and merchant_profile_img != "default_profile.png":
-            if merchant_profile_img.startswith("data:image"):
-                avatar_render_source_url = merchant_profile_img
-            else:
-                legacy_path = os.path.join("profile_pics", merchant_profile_img)
-                if os.path.exists(legacy_path):
-                    try:
-                        with open(legacy_path, "rb") as image_file:
-                            raw_bytes = base64.b64encode(image_file.read()).decode(
-                                "utf-8"
-                            )
-                            avatar_render_source_url = (
-                                f"data:image/png;base64,{raw_bytes}"
-                            )
-                    except Exception:
-                        pass
-
-        # Display the custom cloud file cleanly on page sector grids
+        if (
+            merchant_profile_img
+            and merchant_profile_img != "default_profile.png"
+            and merchant_profile_img.startswith("data:image")
+        ):
+            avatar_render_source_url = merchant_profile_img
         st.image(
             avatar_render_source_url,
             use_container_width=True,
@@ -1538,24 +1790,20 @@ elif sidebar_selection == "📊 Analytical Orders Ledger":
         )
         st.divider()
 
-        # Action broadcast checkbox persistence logic
         include_profile_flag = st.checkbox(
             "🚀 Broadcast brand profile picture and biography metrics directly onto live marketplace product grids",
             value=st.session_state.get("step3_broadcast_profile_parameters", True),
             key="step3_marketplace_broadcast_profile_checkbox",
         )
-        
-        # =========================================================================
-        # 🔗 SYNC EXTRACTION: PACKAGING MATRICES INTO STREAMLIT SESSION CACHE 🔗
-        # =========================================================================
+
         st.session_state["step3_broadcast_profile_parameters"] = include_profile_flag
         st.session_state["cached_merchant_studio_name"] = merchant_studio_name
         st.session_state["cached_merchant_biography"] = merchant_biography
         st.session_state["cached_merchant_avatar_b64"] = avatar_render_source_url
+        st.session_state["cached_merchant_email_address"] = merchant_email_val
 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
-
 
 
 # =========================================================================
@@ -1625,8 +1873,13 @@ elif sidebar_selection == "💰 Subscription Pricing Plan":
     )
     st.markdown("<br/><br/>", unsafe_allow_html=True)
 
-    st.write("#### 🛠️ Manage Workspace Operational Status:")
-        # 1. Your original selectbox sits at the top to catch the user's choice
+    st.markdown(
+        "<h1 style='font-size: 17px; font-weight: bold;'>📊 Manage Workspace Operational Status:</h1>",
+        unsafe_allow_html=True,
+    )
+
+    # st.write("#### 🛠️ Manage Workspace Operational Status:")
+    # 1. Your original selectbox sits at the top to catch the user's choice
     selected_plan_target = st.selectbox(
         "Select target subscription upgrade plan level:",
         ["Freemium Sandbox", "Premium House Seams", "Enterprise Elite Matrix"],
@@ -1647,7 +1900,7 @@ elif sidebar_selection == "💰 Subscription Pricing Plan":
         "💳 Authorize Subscription Settlement & Synchronize Workspace",
         key="pricing_execute_checkout_cta",
         use_container_width=True,
-        disabled=not st.session_state.get("authenticated", False)
+        disabled=not st.session_state.get("authenticated", False),
     ):
         user_session_id_val = st.session_state.get("user_session_id", 0)
 
@@ -1661,7 +1914,9 @@ elif sidebar_selection == "💰 Subscription Pricing Plan":
                 if target_user_row:
                     setattr(target_user_row, "subscription_tier", "freemium")
                     db_session.commit()
-                    st.success("🎉 Switched back to Freemium Sandbox Plan level tier successfully.")
+                    st.success(
+                        "🎉 Switched back to Freemium Sandbox Plan level tier successfully."
+                    )
                     time.sleep(0.5)
                     st.rerun()
             except Exception as e:
@@ -1670,26 +1925,29 @@ elif sidebar_selection == "💰 Subscription Pricing Plan":
             finally:
                 db_session.close()
         else:
-            from payhub_service import create_subscription_payhub_checkout_session
 
             is_annual_bool = "Annual" in billing_cycle
-            st.info("⏳ Initializing highly secure PayHub payment handshake session channels. Please stand by...")
-            
+            st.info(
+                "⏳ Initializing highly secure PayHub payment handshake session channels. Please stand by..."
+            )
+
             checkout_gateway_url = create_subscription_payhub_checkout_session(
-                user_id=user_session_id_val, 
-                tier_token=chosen_tier_token, 
-                is_annual=is_annual_bool
+                user_id=user_session_id_val,
+                tier_token=chosen_tier_token,
+                is_annual=is_annual_bool,
             )
 
             if checkout_gateway_url and "ERROR" in checkout_gateway_url:
                 st.error(checkout_gateway_url)
             elif checkout_gateway_url:
-                st.success("🎉 Subscription invoice session compiled successfully! Open the gate below to clear payment:")
+                st.success(
+                    "🎉 Subscription invoice session compiled successfully! Open the gate below to clear payment:"
+                )
                 st.link_button(
                     "➡️ Proceed to PayHub Secure Checkout Portal",
                     checkout_gateway_url,
                     use_container_width=True,
-                    type="primary"
+                    type="primary",
                 )
 
     st.markdown("</div>", unsafe_allow_html=True)
@@ -2119,7 +2377,24 @@ BODY_SEGMENTATION_ROUTER = {
         "fitting_notes": "🧥 Structured outer overlay: Requires stiff linear grid alignment across the upper shoulders and sleeve cylinders.",
     },
 }
-
+st.markdown(
+    """
+    <style>
+    .head-text h3{
+                display: inline-block;
+                background-color: rgba(26, 115, 232, 0.06);
+                color: #1a73e8;
+                font-size: 12px;
+                font-weight: 700;
+                padding: 6px 14px;
+                border-radius: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 16px;
+            }</style>
+        """,
+    unsafe_allow_html=True,
+)
 
 # --- GLAMEERI NAVBAR BRAND LOGO SYSTEM ---
 # =========================================================================
@@ -2153,17 +2428,19 @@ if os.path.exists(local_logo_disk_path):
 # Alternating to double quotes (") on the outside and single quotes (') on the inside clears all syntax error crashes!
 navbar_branding_html_payload = (
     "<style>"
+    # " .head-text{display: inline-block;background-color: rgba(26, 115, 232, 0.06);color: #1a73e8;font-size: 12px;font-weight: 700;padding: 6px 14px;border-radius: 14px;text-transform: uppercase;letter-spacing: 0.5px;margin-bottom: 16px;}"
     "  .vk-navbar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; padding: 14px 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: sans-serif; }"
     "  .vk-navbar-logo-img { width: auto; max-height: 60px; object-fit: contain; border-radius: 6px; }"
     "  .brand-text-wrapper { flex-grow: 1; text-align: center; margin-right: 60px; }"
     "  .brand-tagline { font-size: 16px; font-weight: 600; color: #E05A47; text-transform: uppercase; letter-spacing: 1px; }"
     "</style>"
     "<div class='vk-navbar'>"
-    f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='AfriTextile Core Branding Logo'/>"
+    # f"  <img src='{navbar_logo_render_url}' class='vk-navbar-logo-img' alt='AfriTextile Core Branding Logo'/>"
     "   <div class='brand-text-wrapper'>"
-    "       <span class='brand-tagline'>AI Fashion innovation Studio</span>"
-    "   </div>"
-    "</div>"
+    "<span class='brand-tagline'>GLAMEERI AI Fabric & Garment Studio</span>"
+    # "       <span class='brand-tagline'> </span>"
+    " </div>"
+    " </div>"
 )
 
 # "       <span class='brand-title'>AfriTextile</span>"
@@ -2183,7 +2460,7 @@ if not st.session_state["authenticated"]:
         )
     with nav_c3:
         st.button(
-            "🛠️ Services", on_click=navigate_to, args=("services",), key="main_nav_serv"
+            "📈 Services", on_click=navigate_to, args=("services",), key="main_nav_serv"
         )
     with nav_c4:
         st.button(
@@ -2275,7 +2552,8 @@ def render_fallback_fabric(hex_color, pattern_style, description, motif_hex_colo
         points = [(random.randint(15, 285), random.randint(15, 285)) for _ in range(8)]
         for i in range(len(points) - 1):
             # draw.line([points[i], points[i + 1]], fill=fill_color, width=2)
-            draw.line([points[i], points[i + 1]], fill="#FF2441", width=2)
+            draw.line([points[i], points[i + 1]], fill=motif_color, width=2)
+        # "#FF2441"
     else:  # Standard Ankara Base Diamond Matrix Layer
         base = Image.new("RGB", (300, 300), color=fill_color)
         draw = ImageDraw.Draw(base)
@@ -2283,7 +2561,8 @@ def render_fallback_fabric(hex_color, pattern_style, description, motif_hex_colo
             for y in range(0, 300, 60):
                 draw.polygon(
                     [(x + 30, y), (x + 60, y + 30), (x + 30, y + 60), (x, y + 30)],
-                    fill="#F7EFE7",
+                    #  fill="#F7EFE7",
+                    fill=motif_color,
                     outline="#2A2A2A",
                 )
 
@@ -2495,6 +2774,21 @@ if (
         """,
         unsafe_allow_html=True,
     )
+st.markdown(
+    """
+    <style>
+/* Centers the logo container and text */
+.vk-navbar-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40%;
+  margin-left: 190px; 
+  margin-bottom: 15px; 
+}</style>
+        """,
+    unsafe_allow_html=True,
+)
 
 
 # --- HOME VIEW ---
@@ -2532,12 +2826,15 @@ if st.session_state["app_view"] == "home" and not st.session_state["authenticate
 
     # 4. 🔥 COMPRESS THE PAYLOAD ONTO A UNIFIED TIMELINE TO ELIMINATE RAW VISIBLE TEXT GATES 🔥
     # Pre-declare single quotes internally to prevent double quotes collisions and syntax crashes!
+    # "  .brand-tagline { font-size: 16px; font-weight: 600; color: #E05A47; text-transform: uppercase; letter-spacing: 1px; }"
+
     brand_showcase_html_payload = (
         "<div class='vk-card' style='text-align: center; padding: 50px 30px;''>"
-        "<div class='vk-hero-badge'>Next-Gen Fashion Ecosystem</div>"
-        "<h1 class='vk-headline'>AI Fabric & Garment Studio</h1>"
-        "<p style='color: var(--vk-text-muted); max-width: 620px; margin: 0 auto 30px auto; font-size:15px;'>"
-        "Welcome to Glameeri's integrated designer portal. Map high-density Ankara, Kente, and Adire prints onto digital style assets instantly with true 3D normal displacement field rendering."
+        "<div class='vk-hero-badge'>The Next-Gen Fashion Ecosystem</div>"
+        #     "<h1 class='vk-headline'>GLAMEERI AI Fabric & Garment Studio</h1>"
+        f"  <img src='{navbar_logo_render_url}' class='vk-navbar-image-container' alt='AfriTextile Core Branding Logo'/>"
+        "<p style='color: var(--vk-text-muted); display: inline-block;max-width: 620px; margin: 0 auto 30px auto; font-size:15px;'>"
+        "Welcome to Glameeri's integrated designer portal. Design quality African fabric and garments onto digital style assets instantly with true 3D rendering."
         "</p>"
         f"<img src='{brand_image_render_url}' style='width: 100%; max-height: 400px; "
         "object-fit: cover; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);' "
@@ -2592,12 +2889,15 @@ elif st.session_state["app_view"] == "about" and not st.session_state["authentic
         "<style>"
         " .vk-navbar-img { width: auto; max-height: 1260px; object-fit: contain; border-radius: 6px; }"
         "</style>"
-        "<h2 class='vk-section-header;'>ℹ️ About Glameeri AI</h2>"
+        "<h4 class='vk-section-header;'>ℹ️ About Glameeri AI</h4>"
         "<p style='color: var(--vk-text-muted); font-size:14px; margin-bottom:12px;'>"
-        "AfriTextile AI Studio bridges local artisanal craftsmanship with automated deep learning computer vision paradigms."
-        "Our pipeline relies entirely on zero-network local RAM matrix operations to guarantee high execution stability."
+        "Glameeri AI Studio bridges craftsmanship with automated deep learning computer vision paradigms. "
+        "Glameeri AI aims to rebrand African fashion both locally and internationally by merging innovative "
+        " designs and outfits by creators with the global markets. It is a platform for fashion designers, Tailors, Collectors, "
+        "fabric/texile design and production and also for fashion enthusiasts. "
+        # "Our pipeline relies entirely on zero-network local RAM matrix operations to guarantee high execution stability."
         "</p>"
-        f"<img src='{brand_image_render_url}' class='vk-navbar-img'alt='AfriTexile Active Collection Banner'/>"
+        f"<img src='{brand_image_render_url}' class='vk-navbar-img'alt='Glameeri Active Collection Banner'/>"
         "</div>"
     )
     # style='width: 100%; max-height: 1400px;
@@ -2613,37 +2913,64 @@ elif st.session_state["app_view"] == "about" and not st.session_state["authentic
 elif (
     st.session_state["app_view"] == "services" and not st.session_state["authenticated"]
 ):
+
     st.markdown(
         """
         <div class="vk-card">
-            <h2 class="vk-section-header">🛠️ Enterprise Studio Ecosystem Modules</h2>
+            <h4 class="vk-section-header">📈 Multifaceted Studio Ecosystem Modules</h4>
             <ul style="color: var(--vk-text-muted); font-size:14px; padding-left:20px; line-height:2.0;">
-                <li><b>Procedural Heritage Vectoring Engine:</b> Renders distinct Ankara, Kente, and Adire tokens on demand.</li>
-                <li><b>3D Surface Normal Displacement Maps:</b> Simulates realistic fabric folds and chest/hip contours.</li>
-                <li><b>ReportLab Lookbook Automation:</b> Generates customer portfolios compiled dynamically with sizing parameters.</li>
+                <li><b>Procedural Heritage Vectoring Engine:</b> Renders distinct African fabric and garments on demand.</li>
+                <li><b>3D Simulation:</b> Simulates realistic fabric designs and clothings.</li>
+                <li><b>A marketplace:</b> Integrated to the platform to enable customer reach and accessibility to a wider market locally and globally. </li>
+                <li><b>Virtual try-on features :</b> This enables you to digitally see how clothes, accessories, or products look on real bodies.</li>
+                <li><b>Analytical tools and insights:</b>This gives you the ability to view your products' performance in the global market and insights on boost sales and customer retention. </li>
+                <li><b>ReportLab Lookbook Automation:</b> Generates portfolios and records compiled dynamically.</li>
             </ul>
-        </div>
     """,
         unsafe_allow_html=True,
     )
+    import base64
+    import streamlit as st
+
+    with open("images/models6.png", "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode()
+
+    # 2. Use the base64 string directly inside the src attribute
+    brand = f"""
+        <div>
+            <img src="data:image/png;base64,{encoded_string}" 
+                style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" 
+                alt="Glameeri Active Collection Banner"/>
+        </div>
+        """
+    st.markdown(brand, unsafe_allow_html=True)
 
 # --- PRICING VIEW ---
 elif (
     st.session_state["app_view"] == "pricing" and not st.session_state["authenticated"]
 ):
-    st.markdown(
-        """
-        <div class="vk-card" style="text-align: center;">
-            <h2 class="vk-section-header">💰 Production Workspace Pricing Plans</h2>
-            <div style="font-size: 36px; font-weight:700; color:#1a73e8; margin-bottom:8px;">0.00 GHS / FREE</div>
-            <p style="color: var(--vk-text-muted); font-size:14px; margin-bottom:20px;">Open Community Access Plan for Local Designers</p>
-        </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-    st.session_state["app_view"] = "public_pricing"
-    st.rerun()
+    # Call function using a blank tier fallback string anchor
+    render_pricing_matrix_panel(user_authenticated=False, active_tier_str="")
+    st.markdown("<br/><hr/>", unsafe_allow_html=True)
+    st.write("##### 🚀 Ready to upscale your design operations?")
+    if st.button(
+        "✨ Initialize Your Free Studio Workspace Now",
+        key="pricing_guest_signup_cta",
+        use_container_width=True,
+    ):
+        st.session_state["app_view"] = "signup"
+        st.rerun()
+        st.markdown("", unsafe_allow_html=True)
+        # --- ROUTER BRANCH B: PUBLIC REGISTRATION SIGNUP SCREEN ---
+    elif st.session_state.get("app_view") == "is_logged_in":
+        # (Your multi-step registration form operates flawlessly here...)
+        st.session_state["app_view"] = "signup"
+        # --- ROUTER BRANCH C: SECURE ACCESS LOGIN SCREEN ---
+    # else:
+    # (Your synchronized session login form operates flawlessly here...)
+    # st.session_state["app_view"] = "home"
+    st.markdown("</div>", unsafe_allow_html=True)
+    # st.rerun()
 elif (
     st.session_state["app_view"] == "start_now"
     and not st.session_state["authenticated"]
@@ -2712,8 +3039,7 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
 
         # The submit button stands firmly inside the form block context layout tree
         submit_registration_trigger = st.form_submit_button(
-            "🚀 Complete Account Registration", 
-            use_container_width=True
+            "🚀 Complete Account Registration", use_container_width=True
         )
 
     # Process the registration database write pipeline ONLY after a valid form submission
@@ -2733,9 +3059,12 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
         if uploaded_avatar is not None:
             try:
                 import base64
+
                 avatar_raw_bytes = uploaded_avatar.getvalue()
                 encoded_avatar_b64 = base64.b64encode(avatar_raw_bytes).decode("utf-8")
-                st.session_state["reg_avatar_filename"] = f"data:image/jpeg;base64,{encoded_avatar_b64}"
+                st.session_state["reg_avatar_filename"] = (
+                    f"data:image/jpeg;base64,{encoded_avatar_b64}"
+                )
             except Exception as convert_err:
                 st.error(f"Local avatar encoding failed: {convert_err}")
 
@@ -2807,8 +3136,7 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
                 db_session.close()
 
     # Close out your custom layout card division tag safely here
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Public view navigation link safely drops outside form container tracking parameters
     st.button(
@@ -2847,7 +3175,7 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
 
 elif st.session_state.get("app_view") == "is_logged_in":
     st.markdown('<div class="vk-card">', unsafe_allow_html=True)
-    st.markdown("### 🔑 Secure Atelier Access Login")
+    st.markdown("### 🔑 Designer Access Login")
     st.write("Enter your production studio credentials to unlock your workspace:")
 
     # 1. Wrap the login inputs inside an explicitly isolated login form container
@@ -2856,7 +3184,7 @@ elif st.session_state.get("app_view") == "is_logged_in":
         # 🔥 FIX 1: Enforce explicit, dedicated session state mapping keys on both text fields.
         # This forces the web browser to lock your typed credentials securely into global RAM!
         st.text_input(
-            "Corporate Email Address:",
+            "Email Address:",
             placeholder="name@studio.com",
             key="login_field_email_stream",  # Unique identification tracking token
         )
@@ -2927,6 +3255,7 @@ elif st.session_state.get("app_view") == "is_logged_in":
                             st.session_state["app_view"] = "studio"
 
                             st.success(
+                                # "🎉 Authorization signature verified via JWT! Launching canvas..."
                                 "🎉 You are successfully logging in!"
                             )
                             db_session.close()
@@ -3006,11 +3335,16 @@ if st.session_state["authenticated"]:
     # ---------------------------------------------------------------------
     # 🔥 STEP 1: ALWAYS REMAINS VISIBLE DOWN THE ENTIRE PORTAL PAGE
     # ---------------------------------------------------------------------
-    st.markdown('<p class="m3-title">🌍 Glameeri AI Studio</p>', unsafe_allow_html=True)
+    # st.markdown('<p class="m3-title">🌍 Glameeri AI Studio</p>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="m3-subtitle">Creative Workspace for African Fashion Designers</p>',
+        "<h1 style='font-size: 17px; font-weight: bold;'>🌍 Designer Canvas Workspace </h1>",
         unsafe_allow_html=True,
     )
+
+    # st.markdown(
+    #    '<p class="m3-subtitle">🌍 Workspace for Designers</p>',
+    #    unsafe_allow_html=True,
+    # )
 # =========================================================================
 # 📐 ACTIVE APP CORE DESIGN HUB WORKSPACE (STABLE ACCUMULATING STACK)
 # =========================================================================
@@ -3053,7 +3387,8 @@ if st.session_state["authenticated"]:
             "Motif Overlay Color Picker:", "#F2B705", key="motif_color_picker_id"
         )
         motif_type = st.text_input(
-            "Enter ANY Motif Specification Prompt (e.g. 'floral patterns', 'honeycomb grids'):",
+            #  "Enter ANY Motif Specification Prompt (e.g. 'floral patterns', 'honeycomb grids', 'spiral', 'stars')",
+            "Enter ANY Motif Specification Prompt (e.g. floral patterns, honeycomb grids, spiral, stars)",
             key="motif_spec_input",
         )
 
@@ -3159,12 +3494,18 @@ if st.session_state["authenticated"]:
         chosen_foundation = st.session_state["chosen_foundation"]
         primary_color = st.session_state["primary_color"]
 
-        st.markdown("##### 📸 Model Template & Posture Source Configuration")
+        st.markdown(
+            "<h1 style='font-size: 17px; font-weight: bold;'>📸 Model Template & Posture Source Configuration</h1>",
+            unsafe_allow_html=True,
+        )
+
+        # st.markdown("##### 📸 Model Template & Posture Source Configuration")
         model_source = st.radio(
             "Select Layout Image Source Mode:",
             [
-                "Use Default Lookbook Templates",
+                "Use Workshop Lookbook Templates",
                 "Upload Custom Client Model",
+                # "Upload Custom Client Cloth Style and Model",
             ],
             key="model_source_selector",
         )
@@ -3185,32 +3526,51 @@ if st.session_state["authenticated"]:
                     "T-Shirt and Short Knicker",
                 ],
                 "Kente Cloth Heritage": [
-                    "Traditional Multi-layered Kente Agbada",
-                    "Royal Kente Wrap (Toga Style)",
-                    "Kente Mermaid Tail Wedding Gown",
-                    "Fitted Kente Blazer and Trousers",
+                    "Off-shoulder Kente Maxi Gown",
+                    "Kente Peplum Top with Pencil Skirt",
+                    "Fitted Ankara Jumpsuit with Flared Sleeves",
+                    "Modern Kente Bomber Jacket and Trouser",
+                    "Long Sleeved Shirt and Trouser",
+                    "Short Sleeved Shirt and Trouser",
+                    "T-Shirt and Short Knicker",
                 ],
                 "Adire Tech": [
-                    "Flowing Adire Kaftan Dress",
-                    "Adire Kimono Lounge Cardigan",
-                    "Modern Fitted Kaftan Suit",
-                    "Adire Shift Midi Dress",
+                    "Off-shoulder Adire Maxi Gown",
+                    "Fitted Adire Jumpsuit with Flared Sleeves",
+                    "Ankara Peplum Top with Pencil Skirt",
+                    "Modern Ankara Bomber Jacket and Trouser",
+                    "Agbada",
+                    "Kaftan",
+                    "Long Sleeved Shirt and Trouser",
+                    "Short Sleeved Shirt and Trouser",
+                    "T-Shirt and Short Knicker",
                 ],
                 "Modern Afro-Futurism": [
-                    "Asymmetric Cyber-Punk Dashiki Gown",
-                    "Metallic Accent Neo-Habesha Dress",
-                    "Structured High-Collar Cape Overcoat",
-                    "Futuristic Geometric Crop Set",
+                    "Off-shoulder Maxi Gown",
+                    "Fitted Jumpsuit with Flared Sleeves",
+                    "Peplum Top with Pencil Skirt",
+                    "Modern Bomber Jacket and Trouser",
+                    "Long Sleeved Shirt and Trouser",
+                    "Short Sleeved Shirt and Trouser",
+                    "T-Shirt and Short Knicker",
                 ],
                 "Plain Solid Colour": [
-                    "Elegant Solid Minimalist Silk Slip Dress",
-                    "Classic Structured Solid Blazer",
-                    "Clean Architectural Plain Kaftan Gown",
+                    "Off-shoulder Maxi Gown",
+                    "Fitted Jumpsuit with Flared Sleeves",
+                    "Peplum Top with Pencil Skirt",
+                    "Modern Bomber Jacket and Trouser",
+                    "Long Sleeved Shirt and Trouser",
+                    "Short Sleeved Shirt and Trouser",
+                    "T-Shirt and Short Knicker",
                 ],
                 "Uploaded Custom Fabric Photo": [
-                    "Custom Tailored Maxi Gown",
-                    "Traditional Multi-layered Agbada",
-                    "Modern Fitted Kaftan Suit",
+                    "Off-shoulder Maxi Gown",
+                    "Fitted Jumpsuit with Flared Sleeves",
+                    "Peplum Top with Pencil Skirt",
+                    "Modern Bomber Jacket and Trouser",
+                    "Long Sleeved Shirt and Trouser",
+                    "Short Sleeved Shirt and Trouser",
+                    "T-Shirt and Short Knicker",
                 ],
             }
             available_styles = OFFLINE_BLUEPRINTS_MAPPING.get(
@@ -3309,7 +3669,9 @@ if st.session_state["authenticated"]:
                 # BRANCH B: DEPLOY SYSTEM TEMPLATES FROM LOCAL DISK STORAGE CHANNELS
                 else:
                     base_project_dir = os.path.dirname(__file__)
-                    images_folder_path = os.path.join(base_project_dir, "images")
+                    images_folder_path = os.path.join(
+                        base_project_dir, "images/templates2"
+                    )
                     search_tokens = [
                         t.strip()
                         for t in str(garment_cut)
@@ -3441,8 +3803,11 @@ if st.session_state["authenticated"]:
                         stencil_mask = Image.fromarray(cv_mask).convert("L")
 
                         # 3. ADVANCED 3D VECTOR SURFACE NORMAL ESTIMATIONS
-                        sobel_x = cv2.Sobel(gray_model, cv2.CV_64F, 1, 0, ksize=5)
-                        sobel_y = cv2.Sobel(gray_model, cv2.CV_64F, 0, 1, ksize=5)
+                        # ✅ FIXED: Direct references clear out linter tracking exceptions completely!
+                        # 💡 Change this line inside your processing script:
+                        sobel_x = cv2.Sobel(gray_model, 6, 1, 0, ksize=5)
+                        sobel_y = cv2.Sobel(gray_model, 6, 0, 1, ksize=5)
+
                         x_grid, y_grid = np.meshgrid(np.arange(w_img), np.arange(h_img))
 
                         dist_map = cv2.distanceTransform(cv_mask, cv2.DIST_L2, 5)
@@ -3617,7 +3982,7 @@ if st.session_state["authenticated"]:
                 )
             else:
                 st.image(
-                    "https://unsplash.com",
+                    "images/avatar4.png",
                     caption="Awaiting Local Imprint Rendering...",
                     use_container_width=True,
                 )
@@ -3664,9 +4029,9 @@ if st.session_state["authenticated"]:
 
             # Import the decoupled service processing function method
             from tryon_service import execute_silhouette_tryon_pipeline
-            from database import Collection, DashboardProduct
+            from database import SessionLocal, Collection, DashboardProduct
 
-            TEMPLATES_FOLDER = "images/model_templates"
+            TEMPLATES_FOLDER = "images/templates"
             ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
 
             col_input, col_output = st.columns(2, gap="large")
@@ -3694,7 +4059,7 @@ if st.session_state["authenticated"]:
                 st.subheader("2. Specify Outfit Silhouette Cut")
                 outfit_input = (
                     st.text_input(
-                        "Enter Target Apparel Cut Type Name (e.g., gown, jumpsuit, top, shirt):",
+                        "Enter Target Apparel Cut Type Name (e.g., gown, jumpsuit, top, skit ,rouser, jacket) :",
                         placeholder="e.g. gown",
                         key="step3_outfit_shape_string_input",
                     )
@@ -3702,24 +4067,27 @@ if st.session_state["authenticated"]:
                     .lower()
                 )
 
+                #  outfit_input = st.selectbox(
+                #      "Select Target Apparel Type Name:",
+                #           "gown",
+                #          "jumpsuit",
+                #          "top
+                #          "skirt",
+                #          "trouser",
+                #          "jacket",
+                #      ],
+                #   )
+
                 # Dynamic directory inspection to verify that the transparent shape template exists on disk
                 # Snippet inside your main Step 3 file to update:
-                silhouette_filename_png = f"{outfit_input}.png" if outfit_input else ""
-                silhouette_filename_jpg = f"{outfit_input}.jpg" if outfit_input else ""
-                silhouette_filename_jpeg = (
-                    f"{outfit_input}.jpeg" if outfit_input else ""
-                )
+                filename_png = f"{outfit_input}.png" if outfit_input else ""
+                filename_jpg = f"{outfit_input}.jpg" if outfit_input else ""
+                filename_jpeg = f"{outfit_input}.jpeg" if outfit_input else ""
 
                 has_valid_file = (
-                    os.path.exists(
-                        os.path.join(TEMPLATES_FOLDER, silhouette_filename_png)
-                    )
-                    or os.path.exists(
-                        os.path.join(TEMPLATES_FOLDER, silhouette_filename_jpg)
-                    )
-                    or os.path.exists(
-                        os.path.join(TEMPLATES_FOLDER, silhouette_filename_jpeg)
-                    )
+                    os.path.exists(os.path.join(TEMPLATES_FOLDER, filename_png))
+                    or os.path.exists(os.path.join(TEMPLATES_FOLDER, filename_jpg))
+                    or os.path.exists(os.path.join(TEMPLATES_FOLDER, filename_jpeg))
                 )
 
                 if outfit_input:
@@ -3858,7 +4226,7 @@ if st.session_state["authenticated"]:
             # 🎛️ FIXED PREVIEW & COMMERCIAL PORTFOLIO PANEL
             # ---------------------------------------------------------------------
             with col_output:
-                st.subheader("4. Compiled Custom Fitted Result")
+                st.subheader("5. Compiled Custom Fitted Result")
 
                 # Master processing sequence trigger loop
                 if submit_btn:
@@ -3892,7 +4260,7 @@ if st.session_state["authenticated"]:
                                 output_jpeg_bytes = execute_silhouette_tryon_pipeline(
                                     person_bytes=verified_person_bytes,
                                     fabric_data=designed_fabric,  # Pulls active fabric from your Step 2 State cleanly
-                                    outfit_source=custom_file,  # Handles paths or custom raw uploaded file bytes seamlessly
+                                    outfit_source=outfit_input,  # Handles paths or custom raw uploaded file bytes seamlessly
                                     category=category,  # 🔥 FIXED: Deleted the stray duplicate variable line right below this!
                                     templates_folder=TEMPLATES_FOLDER,
                                     scale_val=scale_val,
@@ -4050,7 +4418,7 @@ if st.session_state["authenticated"]:
 
         elif model_source == "Upload Custom Client Cloth Style and Model":
 
-            TEMPLATES_FOLDER = "images/model_templates"
+            TEMPLATES_FOLDER = "images/templates"
             ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
             person_bytes = None
             outfit_source_data = None
@@ -4191,7 +4559,7 @@ if st.session_state["authenticated"]:
                         ):
                             try:
                                 # Verify your backend helper points to your correct script filename
-                                from tryon_service2 import (
+                                from Glameeri_offline.tryon_service4 import (
                                     execute_silhouette_tryon_pipeline,
                                 )
 
@@ -4206,11 +4574,6 @@ if st.session_state["authenticated"]:
                                     y_val=y_val,
                                 )
 
-                                st.image(
-                                    output_jpeg_bytes,
-                                    caption=f"AI Tailored Lookbook Preview: {str(outfit_label_text).capitalize()}",
-                                    use_container_width=True,
-                                )
                                 st.session_state["latest_tryon_output"] = (
                                     output_jpeg_bytes
                                 )
@@ -4350,7 +4713,7 @@ if (
     # 🔥 STEP 1: TOGGLE ACTION LOADS OR CLOSES THE WORKBOOK DRAWING LAYER 🔥
     # -------------------------------------------------------------------------
     if st.button(
-        "✨ Open Client Measurement Specification Workbook & Invoice Builder",
+        "✨ Client Measurement Specification Workbook & Invoice Builder",
         key="trigger_3b_form_drawer_cta",
         use_container_width=True,
     ):
@@ -4362,7 +4725,7 @@ if (
             "show_3b_measurement_form_workbook"
         ]
         st.rerun()
-        open_client(garment_cut,db_session)
+        open_client(garment_cut, db_session)
     # --- BUTTON 2 & 3 SUBMISSION ROW ---
 
     # -------------------------------------------------------------------------
@@ -4377,7 +4740,9 @@ if (
             key="lifecycle_add_to_collection_cta",
             use_container_width=True,
         ):
-            collection_button(garment_cut, token_studio_name, token_user_email, db_session)
+            collection_button(
+                garment_cut, token_studio_name, token_user_email, db_session
+            )
 
     with col_life2:
         # ACTION 3: Push directly down to your dynamic commercial storefront engine
@@ -4392,7 +4757,11 @@ if (
             ):
 
                 push_to_studio(
-                    garment_cut, token_user_id, token_studio_name, token_user_email,db_session
+                    garment_cut,
+                    token_user_id,
+                    token_studio_name,
+                    token_user_email,
+                    db_session,
                 )
 
     # --- RENDER MEASUREMENT WORKBOOK CONTAINER ---
@@ -4561,11 +4930,11 @@ if (
         c_waist = float(st.session_state.get("billing_waist_val", 74))
         c_hips = float(st.session_state.get("billing_hips_val", 98))
 
-                # =========================================================================
+        # =========================================================================
         # 💳 REWRITE: NATIVE PAYHUB GARMENT CHECKOUT INTEGRATION LAYER 💳
         # =========================================================================
         if st.button(
-            "💳 Process Customer Payment For This Attire Design",
+            "💳 Process PayHub Customer Payment For This Attire Design",
             key="step4_payhub_garment_checkout_cta",
             use_container_width=True,
         ):
@@ -4595,7 +4964,7 @@ if (
                 st.success(
                     "🎉 PayHub checkout session compiled successfully! Route customer out to clear payments using the portal gate below:"
                 )
-                
+
                 # Render secure navigation portal buttons to forward users to your active invoice payment page
                 st.link_button(
                     "🚀 Proceed to PayHub Checkout",
@@ -4603,18 +4972,21 @@ if (
                     use_container_width=True,
                 )
 
-        if st.button(
-            "↩️ Reset Studio and Build Another Variant", key="reset_studio_final_action"
-        ):
-            st.session_state["wizard_step"] = 1
-            st.session_state["local_tryon_image"] = None
-            st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
+    if st.button(
+        #  "↩️ Reset Studio and Build Another Variant", key="reset_studio_final_action"
+        "↩️ Reset Studio",
+        key="reset_studio_final_action",
+    ):
+        st.session_state["wizard_step"] = 1
+        st.session_state["local_tryon_image"] = None
+        st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        # =========================================================================
-        # 🔓 END OF LOGGED-IN SECTOR / SAFETY SWITCH BOUNDARY
-        # =========================================================================
 
-        # st.markdown("</div>", unsafe_allow_html=True)
+# =========================================================================
+# 🔓 END OF LOGGED-IN SECTOR / SAFETY SWITCH BOUNDARY
+# =========================================================================
 
-        # st.markdown("<br/>", unsafe_allow_html=True)
+# st.markdown("</div>", unsafe_allow_html=True)
+
+# st.markdown("<br/>", unsafe_allow_html=True)
