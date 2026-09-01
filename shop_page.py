@@ -99,7 +99,6 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
             unsafe_allow_html=True,
         )
 
-        st.markdown("### 🔎 Lookbook Query Finder")
         search_query = st.text_input(
             "Search catalog entries via Artisan Username, Product Title, Description, or Style Notes (Tags):",
             placeholder="Type username, title, descriptive words, style attributes...",
@@ -127,7 +126,10 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
         # ✅ FIXED: This cleanly recreates the catalog_products array variable for line 116!
         catalog_products = query_builder.all()
 
-        st.markdown("### 🏷️ Available Studio Inventory Catalog")
+        st.markdown(
+            "<h1 style='font-size: 19px; font-weight: bold;'>🏷️ Available Studio Inventory Catalog</h1>",
+            unsafe_allow_html=True,
+        )
         if not catalog_products:
             st.warning("No apparel assets match your criteria matrices.")
         else:
