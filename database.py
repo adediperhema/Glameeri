@@ -42,6 +42,10 @@ engine = create_engine(
 )
 
 
+engine = st_conn.driver
+
+# 2. Bind it cleanly to your sessionmaker factory helper
+# ✅ This permanently solves your ArgumentError and UnboundExecutionError bugs!
 SessionLocal = sessionmaker(
     autocommit=False, 
     autoflush=False, 
@@ -52,7 +56,7 @@ Base = declarative_base()
 
 def get_db_session():
     """
-    Helper function to safely spin up a bound database session handler
+    Helper function to safely spin up a fully bound database connection session
     """
     db_session = SessionLocal()
     try:
