@@ -349,7 +349,8 @@ if st.session_state.get("authenticated") == True:
 
     active_studio_title: str = str(token_studio_name)
     avatar_render_source_url = (
-        "https://unsplash.com"  # High fashion default fallback image
+        #"https://unsplash.com"  # High fashion default fallback image
+        "images/avatar.png"
     )
 
     # =========================================================================
@@ -398,7 +399,7 @@ if st.session_state.get("authenticated") == True:
         f"<img src='{avatar_render_source_url}' style='width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #E05A47; box-shadow: 0 2px 6px rgba(0,0,0,0.1);' alt='Studio DP'/>"
         "</label>"
         "<div>"
-        "<p style='margin: 0; font-size: 10px; color: #E05A47; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;'>🎨 Active Atelier Canvas</p>"
+        "<p style='margin: 0; font-size: 10px; color: #E05A47; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;'>🎨 Active Designer Canvas</p>"
         f"<h3 style='margin: 4px 0 0 0; color: #2C2623; font-size: 18px; font-weight: 800; line-height: 1.2;'>Hi! {active_studio_title}</h3>"
         f"<label for='vkProfileToggleSwitch' style='font-size: 11px; color: #64748b; cursor: pointer; text-decoration: underline; display: block; margin-top: 6px;'>🔍 View Studio Info</label>"
         "</div>"
