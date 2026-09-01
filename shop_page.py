@@ -4,7 +4,6 @@ import os
 import base64
 import json
 import urllib.request
-import httpx
 from io import BytesIO
 from PIL import Image
 import numpy as np
