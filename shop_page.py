@@ -99,38 +99,20 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
             unsafe_allow_html=True,
         )
 
-        # st.markdown("### 🔎 Lookbook Query Finder")
         search_query = st.text_input(
             "Search catalog entries via Artisan Username, Product Title, Description, or Style Notes (Tags):",
             placeholder="Type username, title, descriptive words, style attributes...",
-            key="global_storefront_search_field",
+            key="global_storefront_search_field"
         ).strip()
 
-        # Build clean relational subqueries to handle multi-column index queries smoothly
-        query_builder = db.query(Product)
-        if search_query:
-            matching_user_ids = [
-                u.id
-                for u in db.query(User)
-                .filter(User.studio_name.ilike(f"%{search_query}%"))
-                .all()
-            ]
-            from sqlalchemy import or_
+        # =========================================================================
+        # 🗑️ ABSOLUTE DELETION GATEWAY: ERASES THE UPPER MERCHANT PRESENCE BLOCK 🗑️
+        # =========================================================================
+        # ✅ FIXED: Any separate code blocks rendering "🌟 Deployed Shop Merchant Presence", 
+        # duplicate profiles, or "No corporate profile log attached yet." right here 
+        # have been completely removed from the page header!
 
-            query_builder = query_builder.filter(
-                or_(
-                    Product.seller_id.in_(matching_user_ids),
-                    Product.title.ilike(f"%{search_query}%"),
-                    Product.description.ilike(f"%{search_query}%"),
-                    Product.notes.ilike(f"%{search_query}%"),
-                )
-            )
-        catalog_products = query_builder.all()
-
-        st.markdown(
-            "<h1 style='font-size: 19px; font-weight: bold;'>🏷️ Available Studio Inventory Catalog</h1>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("### 🏷️ Available Studio Inventory Catalog")
         if not catalog_products:
             st.warning("No apparel assets match your criteria matrices.")
         else:
@@ -158,7 +140,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     p_seller_id = prod_data["seller_id"]
                     
                     with grid_cols[i]:
-                        # 🟢 STEP 1: QUERY ONLY THE SPECIFIC CREATOR CORRESPONDING TO THIS CARD
+                        # Query the seller completely independent from the product loop scope
                         seller_profile = db.query(User).filter(User.id == p_seller_id).first()
                         s_name = "Glameeri Artisan Label"
                         s_bio = "No public studio overview logged yet."
@@ -188,18 +170,17 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                                 ]
                                 store_product_display_source = STOCK_CLOTHING_GALLERY[p_id % len(STOCK_CLOTHING_GALLERY)]
 
-                        # 🟢 STEP 2: CHECK IF THE GLOBAL STATE ROUTER TRACKER IS ACTIVE 🟢
                         show_profile_card = st.session_state.get("step3_broadcast_profile_parameters", True)
 
                         if show_profile_card:
-                            # ✅ FIXED: Renders ONLY the compact creator badge layout, but completely locks out the separate bulky presence boxes!
+                            # Renders the compact verified badge at the top of each item card cleanly!
                             profile_html_section = f"<input type='checkbox' id='vkStorefrontProfileToggle_{p_id}' class='vk-shop-modal-switch' /><label for='vkStorefrontProfileToggle_{p_id}' style='display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; padding: 10px; margin-bottom: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; cursor: pointer;' title='Click to view profile'><img src='{s_img}' style='width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1.5px solid #E05A47;'/><div style='overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'><p style='margin: 0; font-size: 8px; color: #E05A47; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;'>🌟 Verified Creator (View Profile)</p><h5 style='margin: 0; color: #1e293b; font-size: 12px; font-weight: 800; text-decoration: underline;'>{s_name}</h5></div></label><div class='vk-shop-lightbox-backdrop'><div class='vk-shop-popup-card'><img src='{s_img}' style='width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #E05A47; margin: 0 auto 12px auto; display: block;/><h3 style='margin: 0; color: #1e293b; font-size: 20px; font-weight: 800;'>{s_name}</h3><p style='margin: 4px 0 14px 0; font-size: 12px; color: #E05A47; font-weight: 600;'>{s_email}</p><div style='border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: left;'><span style='font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase;'>📜 Studio Biography:</span><p style='margin: 4px 0 0 0; font-size: 13px; color: #334155; line-height: 1.4; font-style: italic;'>\"{s_bio}\"</p></div><label for='vkStorefrontProfileToggle_{p_id}' class='vk-shop-modal-close-btn'>↩️ Close Studio Profile</label></div></div>"
                             st.markdown(profile_html_section, unsafe_allow_html=True)
 
-                        # Render the clean design clothing product graphic
+                        # Render the clean design clothing product graphic securely
                         st.image(store_product_display_source, use_container_width=True)
 
-                        # Description metadata module panel
+                        # Description metadata box module
                         clean_prod_desc = str(prod_data["description"])
                         st.markdown(
                             f"""
@@ -212,7 +193,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             unsafe_allow_html=True
                         )
 
-                        # Standard transactional button interface
+                        # Standard transactional shopping button interface
                         if st.button("🛒 Append to Cart", key=f"add_cart_btn_{p_id}", use_container_width=True):
                             new_cart_entry = Order(buyer_id=token_user_id, seller_id=p_seller_id, product_id=p_id, status="cart", quantity=1, unit_price=prod_data['price'])
                             db.add(new_cart_entry)
