@@ -98,16 +98,13 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
             "<h1 style='font-size: 19px; font-weight: bold;'>🔎 Lookbook Query Finder</h1>",
             unsafe_allow_html=True,
         )
-
         search_query = st.text_input(
             "Search catalog entries via Artisan Username, Product Title, Description, or Style Notes (Tags):",
             placeholder="Type username, title, descriptive words, style attributes...",
             key="global_storefront_search_field"
         ).strip()
 
-        # =========================================================================
-        # 🟢 RESTORED SEARCH LOGIC QUERY ENGINE BLOCK 🟢
-        # =========================================================================
+        # Build clean relational subqueries to handle multi-column index queries smoothly
         query_builder = db.query(Product)
         if search_query:
             matching_user_ids = [
@@ -123,7 +120,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 )
             )
             
-        # ✅ FIXED: This cleanly recreates the catalog_products array variable for line 116!
+        # Recreate the clean data parameters list variable
         catalog_products = query_builder.all()
 
         st.markdown(
