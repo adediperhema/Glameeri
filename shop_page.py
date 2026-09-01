@@ -240,138 +240,71 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             # Render a locked/read-only indicator card for external general storefront browsers
                             st.button("🔒 Try On (Isolated to Designer Session)", key=f"disabled_tryon_mask_{p_id}", disabled=True, use_container_width=True)
 
-
         # --- DYNAMIC ATTACHMENT: SLIDER CONTROLS RENDERING IN AN ISOLATED FRAGMENT CANVAS ---
-        target_selection_id = st.session_state.get(
-            "active_tryon_target_product_id", None
-        )
+        target_selection_id = st.session_state.get("active_tryon_target_product_id", None)
         if target_selection_id:
-            active_fitter_product = (
-                db.query(Product).filter(Product.id == target_selection_id).first()
-            )
+            active_fitter_product = db.query(Product).filter(Product.id == target_selection_id).first()
             if active_fitter_product:
+                
+                # ✅ FIXED: Enforce a fallback disabled check calculation in the parent block before running the canvas
+                btn_disabled_state = False if (has_premium or free_left > 0) else True
 
                 @st.fragment
-                def render_isolated_tryon_canvas(active_product, meter_row):
-                    st.markdown(
-                        f"#### 👗 High-Speed Local Tuning Canvas: **{active_product.title}**"
-                    )
-
+                def render_isolated_tryon_canvas(active_product, meter_row, is_disabled_flag):
+                    st.markdown(f"#### 👗 High-Speed Local Tuning Canvas: **{active_product.title}**")
+                    
                     with st.form(key=f"isolated_local_fitter_form_{active_product.id}"):
                         slider_c1, slider_c2 = st.columns(2)
                         with slider_c1:
-                            person_file = st.file_uploader(
-                                "Upload Your Photo (Person):",
-                                type=["png", "jpg", "jpeg"],
-                                key="p_upload_core",
-                            )
+                            person_file = st.file_uploader("Upload Your Photo (Person):", type=["png", "jpg", "jpeg"], key="p_upload_core")
                             if person_file:
-                                st.image(
-                                    person_file,
-                                    caption="Target Person Mannequin",
-                                    width=140,
-                                )
+                                st.image(person_file, caption="Target Person Mannequin", width=140)
                         with slider_c2:
-                            category_selection = st.selectbox(
-                                "Garment Mapping Category Structure Type:",
-                                options=ALLOWED_CATEGORIES,
-                                index=2,
-                            )
-                            scale_val = st.slider(
-                                "Garment Scale Multiplier Factor:",
-                                min_value=0.5,
-                                max_value=2.0,
-                                value=1.0,
-                                step=0.02,
-                            )
-                            x_val = st.slider(
-                                "Horizontal Adjust Offset (Left ⇄ Right):",
-                                min_value=-300,
-                                max_value=300,
-                                value=0,
-                                step=2,
-                            )
-                            y_val = st.slider(
-                                "Vertical Adjust Offset (Up ⇄ Down):",
-                                min_value=-300,
-                                max_value=300,
-                                value=0,
-                                step=2,
-                            )
+                            category_selection = st.selectbox("Garment Mapping Category Structure Type:", options=ALLOWED_CATEGORIES, index=2)
+                            scale_val = st.slider("Garment Scale Multiplier Factor:", min_value=0.5, max_value=2.0, value=1.0, step=0.02)
+                            x_val = st.slider("Horizontal Adjust Offset (Left ⇄ Right):", min_value=-300, max_value=300, value=0, step=2)
+                            y_val = st.slider("Vertical Adjust Offset (Up ⇄ Down):", min_value=-300, max_value=300, value=0, step=2)
 
                         action_row1, action_row2 = st.columns(2)
                         with action_row1:
-                            execute_render = st.form_submit_button(
-                                "✨ Apply & Replace Clothing",
-                                type="primary",
-                                use_container_width=True,
-                            )
+                            execute_render = st.form_submit_button("✨ Apply & Replace Clothing", type="primary", use_container_width=True)
                         with action_row2:
-                            clear_canvas = st.form_submit_button(
-                                "↩️ Clear Selection Canvas", use_container_width=True
-                            )
+                            clear_canvas = st.form_submit_button("↩️ Clear Selection Canvas", use_container_width=True)
 
                     if clear_canvas:
                         st.session_state["active_tryon_target_product_id"] = None
-                        st.session_state[f"active_tryon_render_{active_product.id}"] = (
-                            None
-                        )
+                        st.session_state[f"active_tryon_render_{active_product.id}"] = None
                         st.rerun()
 
                     if execute_render:
                         if not person_file:
-                            st.error(
-                                "Missing asset constraints! Please upload your portrait photo template first."
-                            )
+                            st.error("Missing asset constraints! Please upload your portrait photo template first.")
                         else:
-                            with st.spinner(
-                                "Processing image components locally on your CPU via rembg engine..."
-                            ):
+                            with st.spinner("Processing image components locally on your CPU via rembg engine..."):
                                 try:
                                     import io
-
-                                    person_img = Image.open(
-                                        io.BytesIO(person_file.getvalue())
-                                    ).convert("RGBA")
-
+                                    person_img = Image.open(io.BytesIO(person_file.getvalue())).convert("RGBA")
+                                    
                                     safe_prod_obj = cast(Any, active_product)
-                                    raw_db_image_source: str = str(
-                                        getattr(safe_prod_obj, "image_url", "")
-                                    )
+                                    raw_db_image_source: str = str(getattr(safe_prod_obj, "image_url", ""))
                                     raw_garment_bytes = None
 
                                     if raw_db_image_source.startswith("data:image"):
-                                        # ✅ FIXED: Adding [1] isolates the raw base64 string payload and perfectly satisfies the type rule!
-                                        raw_b64_text_string: str = (
-                                            raw_db_image_source.split(",")[1]
-                                        )
-                                        raw_garment_bytes = base64.b64decode(
-                                            raw_b64_text_string
-                                        )
+                                        raw_b64_text_string: str = raw_db_image_source.split(",")
+                                        raw_garment_bytes = base64.b64decode(raw_b64_text_string)
                                     elif raw_db_image_source.startswith("http"):
-
-                                        req = urllib.request.Request(
-                                            raw_db_image_source,
-                                            headers={"User-Agent": "Mozilla"},
-                                        )
+                                        req = urllib.request.Request(raw_db_image_source, headers={"User-Agent": "Mozilla"})
                                         with urllib.request.urlopen(req) as web_res:
                                             raw_garment_bytes = web_res.read()
 
                                     if not raw_garment_bytes:
-                                        st.error(
-                                            "❌ Failed to resolve active catalog image data fields into byte streams."
-                                        )
+                                        st.error("❌ Failed to resolve active catalog image data fields into byte streams.")
                                         st.stop()
 
                                     import rembg
-
                                     ai_remove_func = getattr(rembg, "remove")
-                                    clean_garment_bytes = ai_remove_func(
-                                        raw_garment_bytes
-                                    )
-                                    garment_img = Image.open(
-                                        io.BytesIO(clean_garment_bytes)
-                                    ).convert("RGBA")
+                                    clean_garment_bytes = ai_remove_func(raw_garment_bytes)
+                                    garment_img = Image.open(io.BytesIO(clean_garment_bytes)).convert("RGBA")
 
                                     bbox = garment_img.getbbox()
                                     if bbox:
@@ -379,10 +312,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
                                     w_person, h_person = person_img.size
 
-                                    if (
-                                        category_selection == "tops"
-                                        or category_selection == "one-pieces"
-                                    ):
+                                    if category_selection == "tops" or category_selection == "one-pieces":
                                         target_width = int(w_person * 0.54 * scale_val)
                                         target_height = int(h_person * 0.46 * scale_val)
                                         center_x = (w_person // 2) + x_val
@@ -396,85 +326,51 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                                     target_width = max(10, target_width)
                                     target_height = max(10, target_height)
 
-                                    # Resize garment with high-quality antialiasing scaling filters
-                                    resized_garment = garment_img.resize(
-                                        (target_width, target_height),
-                                        Image.Resampling.LANCZOS,
-                                    )
+                                    resized_garment = garment_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-                                    # Seamless pixel blend positioning matrices calculations
                                     person_arr = np.array(person_img)
                                     garment_arr = np.array(resized_garment)
 
                                     x_paste = center_x - (target_width // 2)
                                     y_paste = center_y - (target_height // 2)
 
-                                    p_y1, p_y2 = max(0, y_paste), min(
-                                        h_person, y_paste + target_height
-                                    )
-                                    p_x1, p_x2 = max(0, x_paste), min(
-                                        w_person, x_paste + target_width
-                                    )
+                                    p_y1, p_y2 = max(0, y_paste), min(h_person, y_paste + target_height)
+                                    p_x1, p_x2 = max(0, x_paste), min(w_person, x_paste + target_width)
 
-                                    g_y1, g_y2 = max(0, -y_paste), max(0, -y_paste) + (
-                                        p_y2 - p_y1
-                                    )
-                                    g_x1, g_x2 = max(0, -x_paste), max(0, -x_paste) + (
-                                        p_x2 - p_x1
-                                    )
+                                    g_y1, g_y2 = max(0, -y_paste), max(0, -y_paste) + (p_y2 - p_y1)
+                                    g_x1, g_x2 = max(0, -x_paste), max(0, -x_paste) + (p_x2 - p_x1)
 
                                     if p_y2 > p_y1 and p_x2 > p_x1:
                                         bg_crop = person_arr[p_y1:p_y2, p_x1:p_x2]
                                         fg_crop = garment_arr[g_y1:g_y2, g_x1:g_x2]
 
-                                        # Compute pixel blend opacity alpha masks layers
                                         alpha_mask = fg_crop[:, :, 3] / 255.0
                                         alpha_mask = np.expand_dims(alpha_mask, axis=2)
 
-                                        blended = (
-                                            fg_crop[:, :, :3] * alpha_mask
-                                            + bg_crop[:, :, :3] * (1.0 - alpha_mask)
-                                        ).astype(np.uint8)
+                                        blended = (fg_crop[:, :, :3] * alpha_mask + bg_crop[:, :, :3] * (1.0 - alpha_mask)).astype(np.uint8)
 
                                         person_arr[p_y1:p_y2, p_x1:p_x2, :3] = blended
                                         person_arr[p_y1:p_y2, p_x1:p_x2, 3] = 255
 
-                                    # Build output binary stream data to cache on local screen
                                     final_img = Image.fromarray(person_arr)
                                     output_buffer = BytesIO()
-                                    final_img.convert("RGB").save(
-                                        output_buffer, format="PNG"
-                                    )
+                                    final_img.convert("RGB").save(output_buffer, format="PNG")
                                     final_bytes = output_buffer.getvalue()
 
                                     if not has_premium:
-                                        meter_row.free_uses_left = max(
-                                            0, int(meter_row.free_uses_left) - 1
-                                        )
+                                        meter_row.free_uses_left = max(0, int(meter_row.free_uses_left) - 1)
                                         db.commit()
 
-                                    st.session_state[
-                                        f"active_tryon_render_{active_product.id}"
-                                    ] = final_bytes
+                                    st.session_state[f"active_tryon_render_{active_product.id}"] = final_bytes
                                     st.success("High-speed local rendering complete!")
                                 except Exception as e:
-                                    st.error(
-                                        f"Local image processing pipeline encountered a failure: {e}"
-                                    )
+                                    st.error(f"Local image processing pipeline encountered a failure: {e}")
 
-                    # Closeable workspace container block to hide output screens cleanly on click
                     active_render_key = f"active_tryon_render_{active_product.id}"
                     if st.session_state.get(active_render_key) is not None:
-                        st.markdown(
-                            "<div style='border: 2px dashed #15c39a; padding: 15px; border-radius: 8px; background-color: #f0fdf4; margin-top: 15px;'>",
-                            unsafe_allow_html=True,
-                        )
-                        st.image(
-                            st.session_state[active_render_key],
-                            caption="Tailored Output Local Fit",
-                            use_container_width=True,
-                        )
-
+                        st.markdown("<div style='border: 2px dashed #15c39a; padding: 15px; border-radius: 8px; background-color: #f0fdf4; margin-top: 15px;'>", unsafe_allow_html=True)
+                        st.image(st.session_state[active_render_key], caption="Tailored Output Local Fit", use_container_width=True)
+                        
                         close_col1, close_col2 = st.columns(2)
                         with close_col1:
                             st.download_button(
@@ -483,68 +379,44 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                                 file_name=f"fitted_{str(active_product.title).lower()}.png",
                                 mime="image/png",
                                 use_container_width=True,
-                                key=f"dl_button_catalog_{active_product.id}",
+                                key=f"dl_button_catalog_{active_product.id}"
                             )
                         with close_col2:
-                            if st.button(
-                                "❌ Close Canvas Preview",
-                                key=f"close_canvas_fitter_{active_product.id}",
-                                use_container_width=True,
-                                type="secondary",
-                            ):
+                            if st.button("❌ Close Canvas Preview", key=f"close_canvas_fitter_{active_product.id}", use_container_width=True, type="secondary"):
                                 st.session_state[active_render_key] = None
                                 st.rerun()
                         st.markdown("</div>", unsafe_allow_html=True)
 
-                    if disabled_flag:
+                    # ✅ FIXED: Now uses the parameter variable 'is_disabled_flag' passed safely into the function scope!
+                    if is_disabled_flag:
                         st.caption("⚠️ Try-On threshold exceeded.")
-                        if st.button(
-                            "Unlock Unlimited ($9.99)",
-                            key=f"premium_buy_{active_product.id}",
-                            type="primary",
-                            use_container_width=True,
-                        ):
+                        if st.button("Unlock Unlimited ($9.99)", key=f"premium_buy_{active_product.id}", type="primary", use_container_width=True):
                             try:
                                 req_payload = {
                                     "email": buyer_email,
                                     "amount": 999,
                                     "callback_url": "http://localhost:8501",
-                                    "metadata": {
-                                        "custom_fields": [
-                                            {
-                                                "display_name": "Context",
-                                                "variable_name": "checkout_type",
-                                                "value": "upgrade",
-                                            }
-                                        ]
-                                    },
+                                    "metadata": {"custom_fields": [{"display_name": "Context", "variable_name": "checkout_type", "value": "upgrade"}]}
                                 }
+                                # Ensure the full API link parameter structure is used
                                 req = urllib.request.Request(
                                     "https://paystack.co",
                                     data=json.dumps(req_payload).encode("utf-8"),
-                                    headers={
-                                        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
-                                        "Content-Type": "application/json",
-                                    },
+                                    headers={"Authorization": f"Bearer {PAYSTACK_SECRET_KEY}", "Content-Type": "application/json"}
                                 )
                                 with urllib.request.urlopen(req) as res_upgrade:
-                                    res_data = json.loads(
-                                        res_upgrade.read().decode("utf-8")
-                                    )
+                                    res_data = json.loads(res_upgrade.read().decode("utf-8"))
                                     if res_data.get("status"):
-                                        upgrade_gateway_url = res_data["data"][
-                                            "authorization_url"
-                                        ]
+                                        upgrade_gateway_url = res_data["data"]["authorization_url"]
                                         setattr(safe_meter, "has_premium_access", True)
                                         db.commit()
-                                        st.markdown(
-                                            f'<a href="{upgrade_gateway_url}" target="_blank" style="display: block; text-align: center; background-color: #15c39a; color: white; padding: 12px; border-radius: 6px; font-weight: bold; text-decoration: none;">➡️ Authorize Paystack Upgrade</a>',
-                                            unsafe_allow_html=True,
-                                        )
+                                        st.markdown(f'<a href="{upgrade_gateway_url}" target="_blank" style="display: block; text-align: center; background-color: #15c39a; color: white; padding: 12px; border-radius: 6px; font-weight: bold; text-decoration: none;">➡️ Authorize Paystack Upgrade</a>', unsafe_allow_html=True)
                             except Exception as e:
                                 st.error(f"Paystack Initialize Error: {e}")
 
-                render_isolated_tryon_canvas(active_fitter_product, safe_meter)
+                # ✅ FIXED: Explicitly pass the calculated state integer variable into the call!
+                render_isolated_tryon_canvas(active_fitter_product, safe_meter, btn_disabled_state)
+
 
     # =========================================================================
     # 📊 RIGHT CONTAINER: FIXED BASKET MONITOR HEADER & ACTIVE SHOPPING CART 📊
