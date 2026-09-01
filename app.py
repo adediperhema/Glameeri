@@ -1068,22 +1068,6 @@ elif sidebar_selection == "🛒 Marketplace":
             "cached_merchant_avatar_b64", "https://unsplash.com"
         )
 
-        st.markdown(
-            f"""
-            <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 14px; margin-bottom: 30px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); font-family: sans-serif;">
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <img src="{m_img}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #E05A47;"/>
-                    <div>
-                        <p style="margin: 0; font-size: 11px; color: #E05A47; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">🌟 Deployed Shop Merchant Presence</p>
-                        <h3 style="margin: 4px 0; color: #1e293b; font-size: 20px; font-weight: 800;">{m_name}</h3>
-                        <p style="margin: 0; font-size: 13px; color: #64748b; font-style: italic;">"{m_bio}"</p>
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
     # 6. LAUNCH THE COMPREHENSIVE MARKETPLACE INVENTORY MODULE
     from shop_page import render_marketplace_hub
 
