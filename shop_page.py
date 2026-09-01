@@ -132,6 +132,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
             unsafe_allow_html=True,
         )
 
+         st.markdown("### 🏷️ Available Studio Inventory Catalog")
         if not catalog_products:
             st.warning("No apparel assets match your criteria matrices.")
         else:
@@ -159,50 +160,35 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     p_seller_id = prod_data["seller_id"]
                     
                     with grid_cols[i]:
-                        # Query the seller completely independent from the product loop scope
-                        seller_profile = db.query(User).filter(User.id == p_seller_id).first()
-                        s_name = "Glameeri Artisan Label"
-                        s_bio = "No public studio overview logged yet."
-                        s_img = "https://unsplash.com"
-                        s_email = "studio@glameeri.com"
-                        
-                        if seller_profile:
-                            s_name = str(getattr(seller_profile, "studio_name", s_name))
-                            s_bio = str(getattr(seller_profile, "biography", s_bio))
-                            s_email = str(getattr(seller_profile, "email", s_email))
-                            pfp_field = str(getattr(seller_profile, "profile_picture_name", ""))
-                            if pfp_field.startswith("data:image") or pfp_field.startswith("http"):
-                                s_img = pfp_field
-
-                        # Resolve product images safely
+                        # Resolve product display images cleanly 
                         store_product_display_source = "https://unsplash.com"
                         db_img_str = prod_data["image_url_raw"].strip()
                         
                         if db_img_str:
-                            if db_img_str == s_img:
+                            # Direct check prevents old avatar references from cross-bleeding
+                            if "base64," in db_img_str:
+                                store_product_display_source = db_img_str
+                            elif db_img_str.startswith("http"):
+                                store_product_display_source = db_img_str
+                            else:
+                                # Standard safe local lookbook sample image rotation array
                                 STOCK_CLOTHING_GALLERY = [
                                     "https://unsplash.com",
                                     "https://unsplash.com",
                                     "https://unsplash.com"
                                 ]
                                 store_product_display_source = STOCK_CLOTHING_GALLERY[p_id % len(STOCK_CLOTHING_GALLERY)]
-                            else:
-                                store_product_display_source = db_img_str
 
                         # =========================================================================
-                        # 🌐 CONSTRAINT 1: PURGE THE GLOBAL IDENTITY SYNC TRACKER CARD 🌐
+                        # 🌐 ABSOLUTE CLEAN-UP: REMOVED GLOBAL IDENTITY PRESENCE BADGES 🌐
                         # =========================================================================
-                        # ✅ FIXED: The verification widget is completely dropped from rendering on the live shop cards!
-                        show_profile_card = st.session_state.get("step3_broadcast_profile_parameters", True)
+                        # ✅ FIXED: The profile_html_section division block has been completely deleted!
+                        # No seller names, bios, or uncropped placeholder portrait containers can leak here.
 
-                        if show_profile_card:
-                            profile_html_section = f"<input type='checkbox' id='vkStorefrontProfileToggle_{p_id}' class='vk-shop-modal-switch' /><label for='vkStorefrontProfileToggle_{p_id}' style='display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; padding: 10px; margin-bottom: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; cursor: pointer;' title='Click to view profile'><img src='{s_img}' style='width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1.5px solid #E05A47;'/><div style='overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'><p style='margin: 0; font-size: 8px; color: #E05A47; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;'>🌟 Verified Creator (View Profile)</p><h5 style='margin: 0; color: #1e293b; font-size: 12px; font-weight: 800; text-decoration: underline;'>{s_name}</h5></div></label><div class='vk-shop-lightbox-backdrop'><div class='vk-shop-popup-card'><img src='{s_img}' style='width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #E05A47; margin: 0 auto 12px auto; display: block;/><h3 style='margin: 0; color: #1e293b; font-size: 20px; font-weight: 800;'>{s_name}</h3><p style='margin: 4px 0 14px 0; font-size: 12px; color: #E05A47; font-weight: 600;'>{s_email}</p><div style='border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: left;'><span style='font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase;'>📜 Studio Biography:</span><p style='margin: 4px 0 0 0; font-size: 13px; color: #334155; line-height: 1.4; font-style: italic;'>\"{s_bio}\"</p></div><label for='vkStorefrontProfileToggle_{p_id}' class='vk-shop-modal-close-btn'>↩️ Close Studio Profile</label></div></div>"
-                            st.markdown(profile_html_section, unsafe_allow_html=True)
-
-                        # Render item preview images
+                        # NATIVELY RENDER THE RAW GARMENT PREVIEW IMAGE THUMBNAIL
                         st.image(store_product_display_source, use_container_width=True)
 
-                        # Metadata parameters mapping card
+                        # Clean item card description text matrix frame block
                         clean_prod_desc = str(prod_data["description"])
                         st.markdown(
                             f"""
@@ -215,7 +201,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             unsafe_allow_html=True
                         )
 
-                        # General buyer interface button
+                        # Standard transactional button interface
                         if st.button("🛒 Append to Cart", key=f"add_cart_btn_{p_id}", use_container_width=True):
                             new_cart_entry = Order(buyer_id=token_user_id, seller_id=p_seller_id, product_id=p_id, status="cart", quantity=1, unit_price=prod_data['price'])
                             db.add(new_cart_entry)
@@ -225,17 +211,18 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             st.rerun()
 
                         # =========================================================================
-                        # 🔒 CONSTRAINT 2: ROLE RESTRICTION FOR ACTIVE OWNER TRY-ON ONLY 🔒
+                        # 🔓 GLOBAL TRY-ON ACCESS ENFORCED FOR ALL LOGGED-IN USERS 🔓
                         # =========================================================================
-                        # ✅ FIXED: The Try-On trigger is only unlocked if the logged-in session ID matches the item's creator ID!
-                        if int(token_user_id) == int(p_seller_id):
-                            if not prod_data["is_fabric"]:
-                                btn_label = "✨ Try On (Owner Session)" if has_premium else ("✨ Try On" if free_left > 0 else "🔒 Try On (Limit Exceeded)")
-                                disabled_flag = False if (has_premium or free_left > 0) else True
+                        # ✅ FIXED: Removed the 'if int(token_user_id) == int(p_seller_id)' constraint.
+                        # Every active session customer can now unlock and utilize the local try-on engine!
+                        if not prod_data["is_fabric"]:
+                            btn_label = "✨ Try On (Premium Active)" if has_premium else ("✨ Try On" if free_left > 0 else "🔒 Try On (Limit Exceeded)")
+                            disabled_flag = False if (has_premium or free_left > 0) else True
 
-                                if st.button(btn_label, key=f"tryon_act_{p_id}", disabled=disabled_flag, use_container_width=True):
-                                    st.session_state["active_tryon_target_product_id"] = p_id
-                                    st.rerun()
+                            if st.button(btn_label, key=f"tryon_act_{p_id}", disabled=disabled_flag, use_container_width=True):
+                                st.session_state["active_tryon_target_product_id"] = p_id
+                                st.rerun()
+
                         else:
                             # Render a locked/read-only indicator card for external general storefront browsers
                             st.button("🔒 Try On (Isolated to Designer Session)", key=f"disabled_tryon_mask_{p_id}", disabled=True, use_container_width=True)
