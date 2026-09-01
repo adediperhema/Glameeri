@@ -99,6 +99,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
             unsafe_allow_html=True,
         )
 
+        st.markdown("### 🔎 Lookbook Query Finder")
         search_query = st.text_input(
             "Search catalog entries via Artisan Username, Product Title, Description, or Style Notes (Tags):",
             placeholder="Type username, title, descriptive words, style attributes...",
@@ -106,11 +107,25 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
         ).strip()
 
         # =========================================================================
-        # 🗑️ ABSOLUTE DELETION GATEWAY: ERASES THE UPPER MERCHANT PRESENCE BLOCK 🗑️
+        # 🟢 RESTORED SEARCH LOGIC QUERY ENGINE BLOCK 🟢
         # =========================================================================
-        # ✅ FIXED: Any separate code blocks rendering "🌟 Deployed Shop Merchant Presence", 
-        # duplicate profiles, or "No corporate profile log attached yet." right here 
-        # have been completely removed from the page header!
+        query_builder = db.query(Product)
+        if search_query:
+            matching_user_ids = [
+                u.id for u in db.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
+            ]
+            from sqlalchemy import or_
+            query_builder = query_builder.filter(
+                or_(
+                    Product.seller_id.in_(matching_user_ids),
+                    Product.title.ilike(f"%{search_query}%"),
+                    Product.description.ilike(f"%{search_query}%"),
+                    Product.notes.ilike(f"%{search_query}%")
+                )
+            )
+            
+        # ✅ FIXED: This cleanly recreates the catalog_products array variable for line 116!
+        catalog_products = query_builder.all()
 
         st.markdown("### 🏷️ Available Studio Inventory Catalog")
         if not catalog_products:
