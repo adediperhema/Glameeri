@@ -20,9 +20,6 @@ import bcrypt
 
 from sqlalchemy.ext.declarative import declarative_base
 
-# Ensure this matches your existing Base setup if you already have one defined
-Base = declarative_base()
-
 
 import streamlit as st
 
@@ -35,25 +32,34 @@ conn = st.connection(
     url=f"postgresql://{db_config['username']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}",
 )
 
-# Query data safely
-# df = conn.query("SELECT * FROM my_table;", ttl="10m")
-# st.dataframe(df)
+
+# The engine handles raw communications with your remote Supabase database instance cluster
+engine = create_engine(
+    conn,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True  # Automatically checks if your Supabase connection is still alive before querying
+)
 
 
-# =========================================================================
-# 🗄️ PRODUCTION DATABASE CONNECTION (POSTGRESQL MULTI-LAYER INSTANCE)
-# =========================================================================
-# DATABASE_URL = "postgresql+psycopg2://postgres:rhema12345@localhost:5432/Fashiondb"
+SessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=engine
+)
 
-# engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-# SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-# Base = declarative_base()
-
-# Initialize your engine configuration with reliable connection pooling parameters
-
-
-SessionLocal = sessionmaker()
 Base = declarative_base()
+
+def get_db_session():
+    """
+    Helper function to safely spin up a bound database session handler
+    """
+    db_session = SessionLocal()
+    try:
+        return db_session
+    except Exception as e:
+        db_session.close()
+        raise e
 
 
 # =========================================================================
