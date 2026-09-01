@@ -132,7 +132,6 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
             unsafe_allow_html=True,
         )
 
-         st.markdown("### 🏷️ Available Studio Inventory Catalog")
         if not catalog_products:
             st.warning("No apparel assets match your criteria matrices.")
         else:
