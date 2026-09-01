@@ -16,8 +16,8 @@ from database import (
     CollectionWork,
     DashboardProduct,
     ShopOrder,
+    SessionLocal,
     User,
-    conn,
     hash_password,
 )
 from sqlalchemy.orm import Session
@@ -36,9 +36,10 @@ import logging
 # Safe production casting pattern
 from typing import Any, cast
 
-#engine = conn._engine
+# engine = conn._engine
 # session = Session(engine)F
-#db_session = Session(engine)
+# db_session = Session(engine)
+db_session = SessionLocal()
 
 
 def bootstrap_silhouette_assets():
@@ -284,7 +285,7 @@ def create_attire_checkout_session(user_id, client_name, cost_usd, bust, waist, 
 def render_pricing_matrix_panel(user_authenticated: bool, active_tier_str: str) -> None:
     """Renders the crisp, solid-white premium checkout pricing cards grid."""
     st.markdown(
-        "<h3>💰 Studio Workspace Tier Subscriptions</h3>", unsafe_allow_html=True
+        "<h4>💰 Studio Workspace Tier Subscriptions</h4>", unsafe_allow_html=True
     )
 
     # Unique keys per mode prevent Streamlit state collisions
@@ -297,8 +298,8 @@ def render_pricing_matrix_panel(user_authenticated: bool, active_tier_str: str) 
     )
 
     is_annual = "Annual" in billing_cycle
-    premium_cost = "$29/mo" if not is_annual else "$228/yr ($19/mo)"
-    enterprise_cost = "$149/mo" if not is_annual else "$1,188/yr ($99/mo)"
+    premium_cost = "$14/mo" if not is_annual else "$135/yr ($11/mo)"
+    enterprise_cost = "$44/mo" if not is_annual else "$423/yr ($35/mo)"
     active_tier = str(active_tier_str).lower().strip()
 
     # =========================================================================
@@ -340,7 +341,7 @@ def render_pricing_matrix_panel(user_authenticated: bool, active_tier_str: str) 
         "   <div class='vk-price-head'><h3>Enterprise Elite</h3><p style='font-size:12px; color:#64748b; margin:4px 0;'>Global Fashion Groups & Scaled Mills</p><div class='vk-price-amt'>"
         + enterprise_cost
         + "</div></div>"
-        "   <ul class='vk-price-features'><li>🚀 <b>Unlimited Generations</b> completely uncapped</li><li>🏪 <b>Multi-Vendor Shop System</b> tracking metrics</li><li>📊 Advanced <b>Dataviz Sales Analytics</b> graphs</li></ul>"
+        "   <ul class='vk-price-features'><li>🚀 <b>Unlimited Generations</b> completely uncapped</li><li>🏪 <b>Multi-Vendor Shop System</b> tracking metrics</li><li>📊 Advanced <b>Data Visualization Sales Analytics</b> graphs</li></ul>"
         "</div>"
         "</div>"
     )
@@ -348,11 +349,13 @@ def render_pricing_matrix_panel(user_authenticated: bool, active_tier_str: str) 
     st.markdown(pricing_html_payload, unsafe_allow_html=True)
 
 
-def push_to_studio(garment_cut, token_user_id, token_studio_name, token_user_email,db_session):
+def push_to_studio(
+    garment_cut, token_user_id, token_studio_name, token_user_email, db_session
+):
     generated_title = f"Design - {str(garment_cut).capitalize()}"
     inferred_origin = "Clothing"
     runtime_notes = "A modern customized apparel cut. Ready for retail distribution."
-    #db_session = Session(engine)
+    # db_session = Session(engine)
     # db = SessionLocal()
     try:
         # 🔥 Dynamic inline injection bypasses top-level red imports completely
@@ -514,7 +517,7 @@ def collection_button(garment_cut, token_studio_name, token_user_email, db_sessi
         db_session.close()
 
 
-def open_client(garment_cut,db_session):
+def open_client(garment_cut):
     # -------------------------------------------------------------------------
     # 🔥 STEP 1: DYNAMIC INTENSITY WORKBOOK REGISTRY FORM DRAWER 🔥
     # -------------------------------------------------------------------------
@@ -524,7 +527,7 @@ def open_client(garment_cut,db_session):
             unsafe_allow_html=True,
         )
         st.markdown(
-            "<h4 style='color:#E05A47; margin-top:0;'>📝 Active Atelier Client Specifications Database Ledger</h4>",
+            "<h4 style='color:#E05A47; margin-top:0;'>📝 Active Client Specifications Database Ledger</h4>",
             unsafe_allow_html=True,
         )
         st.write(
@@ -779,7 +782,7 @@ def live_studio(db_session):
                     f"""
                         <div style="background-color: #ffffff; border: 1px solid #dadce0; border-radius: 12px; padding: 18px; margin-bottom: 16px; color:#2d3748; font-family: sans-serif;">
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #dadce0; padding-bottom: 8px; margin-bottom: 12px;">
-                                <strong style="font-size: 16px; color: #1a202c;">👤 Client Profile: {r_name}</strong>
+                                <strong style="font-size: 14px; color: #1a202c;">👤 Client Profile: {r_name}</strong>
                                 <span style="background-color: {badge_bg}; color: white; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase;">{r_status}</span>
                                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; background-color: #f7fafc; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; border: 1px solid #edf2f7; margin-bottom:12px;">
                                 <div><span style="color:#718096; display:block; margin-bottom:2px;">Bust</span><b>{r_chest}"</b></div>
@@ -856,7 +859,10 @@ def saved_measurement():
 
     ##############
 
-    st.title("📊 Active Atelier Client Specifications Database Ledger")
+    st.markdown(
+        "<h1 style='font-size: 17px; font-weight: bold;'>📊 Active Client Specifications Database Ledger</h1>",
+        unsafe_allow_html=True,
+    )
     st.write(
         "Review, track, and manage documented customer sizing dimensions or log a new record on the fly:"
     )
