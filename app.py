@@ -319,7 +319,7 @@ if st.session_state.get("authenticated") == True:
     token_studio_name: str = fallback_studio_name
     verified_email_log: str = "studio@glameeri.com"
     verified_bio_log: str = "No corporate profile logs attached."
-    active_avatar_name: str = "images/avatar.png"
+    active_avatar_name: str = "default_profile.png"
 
     # 1. FIX: Keep database queries intact and read variables BEFORE closing the connection
     try:
@@ -340,7 +340,7 @@ if st.session_state.get("authenticated") == True:
                     )
                 )
                 active_avatar_name = str(
-                    getattr(current_user, "profile_picture_name", "images/avatar.png")
+                    getattr(current_user, "profile_picture_name", "default_profile.png")
                 )
     except Exception as query_error:
         st.sidebar.error(f"Profile recovery bottleneck: {query_error}")
@@ -356,7 +356,7 @@ if st.session_state.get("authenticated") == True:
     # =========================================================================
     # 🪡 FIX 2: BASE64 CLOUD STRING INTERPRETATION LOGIC (NO DISK CHECKS) 🪡
     # =========================================================================
-    if active_avatar_name and active_avatar_name != "images/avatar.png":
+    if active_avatar_name and active_avatar_name != "default_profile.png":
         # If the string starts with data:image, it means it's our new persistent Base64 cloud file stream!
         if active_avatar_name.startswith("data:image"):
             avatar_render_source_url = active_avatar_name
@@ -1641,7 +1641,7 @@ elif sidebar_selection == "📈 Merchant & Shop Dashboard ":
 
     merchant_studio_name = "Glameeri Artisan Label"
     merchant_biography = "No public studio overview logged yet."
-    merchant_profile_img = "images/avatar.png"
+    merchant_profile_img = "default_profile.png"
     merchant_email_val = "studio@glameeri.com"
 
     try:
@@ -1655,7 +1655,7 @@ elif sidebar_selection == "📈 Merchant & Shop Dashboard ":
                 getattr(safe_user, "biography", "No public studio overview logged yet.")
             )
             merchant_profile_img = str(
-                getattr(safe_user, "profile_picture_name", "images/avatar.png")
+                getattr(safe_user, "profile_picture_name", "default_profile.png")
             )
             merchant_email_val = str(getattr(safe_user, "email", "studio@glameeri.com"))
     except Exception as db_err:
@@ -1762,7 +1762,7 @@ elif sidebar_selection == "📈 Merchant & Shop Dashboard ":
         avatar_render_source_url = "https://unsplash.com"
         if (
             merchant_profile_img
-            and merchant_profile_img != "images/avatar.png"
+            and merchant_profile_img != "default_profile.png"
             and merchant_profile_img.startswith("data:image")
         ):
             avatar_render_source_url = merchant_profile_img
@@ -2994,7 +2994,7 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
     if "reg_studio_cache" not in st.session_state:
         st.session_state["reg_studio_cache"] = ""
     if "reg_avatar_filename" not in st.session_state:
-        st.session_state["reg_avatar_filename"] = "images/avatar.png"
+        st.session_state["reg_avatar_filename"] = "default_profile.png"
 
     # --- THE CORE ACCOUNT PARAMETERS FORM MATRIX ---
     st.write("Enter Account Credentials & Studio Metadata:")
@@ -3111,7 +3111,7 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
                     st.session_state["reg_email_cache"] = ""
                     st.session_state["reg_pass_cache"] = ""
                     st.session_state["reg_studio_cache"] = ""
-                    st.session_state["reg_avatar_filename"] = "images/avatar.png"
+                    st.session_state["reg_avatar_filename"] = "default_profile.png"
 
                     db_session.close()
                     time.sleep(0.7)
@@ -3965,7 +3965,7 @@ if st.session_state["authenticated"]:
                 st.download_button(
                     label="💾 Download 3D Garment Design Image (PNG)",
                     data=img_byte_arr.getvalue(),
-                    file_name=f"Volkoda_TryOn_{int(time.time())}.png",
+                    file_name=f"Glameeri_TryOn_{int(time.time())}.png",
                     mime="image/png",
                     use_container_width=True,
                     key="download_tryon_canvas_image_cta",
