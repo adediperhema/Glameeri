@@ -298,7 +298,7 @@ def render_seller_dashboard_suite(db, token_user_id):
 
     if not staging_items:
         st.caption(
-            "No product drafts currently in staging. Execute a push to the dashboard inside Step 3 to see items appear here."
+            "No product drafts currently in staging."
         )
         return
 
