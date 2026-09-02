@@ -1734,6 +1734,7 @@ elif sidebar_selection == "📈 Merchant & Shop Dashboard ":
         '<div style="background-color:#ffffff; border:1px solid #e2e8f0; padding:20px; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); font-family:sans-serif;">',
         unsafe_allow_html=True,
     )
+
     st.markdown(
         "<h4 style='margin-top:0; color:#1e293b; font-weight:800;'>🌐 Global Storefront Identity Sync Tracker</h4>",
         unsafe_allow_html=True,
@@ -1741,13 +1742,30 @@ elif sidebar_selection == "📈 Merchant & Shop Dashboard ":
 
     prof_col1, prof_col2 = st.columns([1, 4], gap="medium")
     with prof_col1:
+        # 🟢 STEP 1: INITIALIZE RE-ENGINEERED LOCAL PATH FALLBACK ASSET LINK 🟢
+        # Standard web fallback if your local project file structure gets completely lost
         avatar_render_source_url = "https://unsplash.com"
-        if (
-            merchant_profile_img
-            and merchant_profile_img != "default_profile.png"
-            and merchant_profile_img.startswith("data:image")
-        ):
-            avatar_render_source_url = merchant_profile_img
+        
+        # Pull your custom local images/avatar.png file and compile its base64 code string instantly on CPU
+        local_project_avatar_path = "images/avatar.png"
+        if os.path.exists(local_project_avatar_path):
+            try:
+                with open(local_project_avatar_path, "rb") as local_img_file:
+                    raw_b64_bytes = base64.b64encode(local_img_file.read())
+                    clean_b64_string = raw_b64_bytes.decode("utf-8").replace("\n", "").replace("\r", "")
+                    avatar_render_source_url = f"data:image/png;base64,{clean_b64_string}"
+            except Exception:
+                pass
+
+        # 🟢 STEP 2: ASSIGN STRATEGIC INTERCEPT GATES 🟢
+        # If the merchant has a true custom Base64 upload or public HTTP link string, use that instead
+        if merchant_profile_img and str(merchant_profile_img).strip() != "":
+            cleaned_img_str = str(merchant_profile_img).strip()
+            if cleaned_img_str.startswith("data:image") or cleaned_img_str.startswith("http"):
+                if cleaned_img_str != "default_profile.png" and "images/avatar.png" not in cleaned_img_str:
+                    avatar_render_source_url = cleaned_img_str
+
+        # ✅ FIXED: Now safely displays images/avatar.png as the native baseline graphic on your screen!
         st.image(
             avatar_render_source_url,
             use_container_width=True,
@@ -1773,6 +1791,7 @@ elif sidebar_selection == "📈 Merchant & Shop Dashboard ":
         st.session_state["cached_merchant_biography"] = merchant_biography
         st.session_state["cached_merchant_avatar_b64"] = avatar_render_source_url
         st.session_state["cached_merchant_email_address"] = merchant_email_val
+
 
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
