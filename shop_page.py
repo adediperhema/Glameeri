@@ -154,20 +154,40 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     p_seller_id = prod_data["seller_id"]
                     
                     with grid_cols[i]:
-                        # Query the seller completely independent from the product loop scope
+                        # 1. Query the seller corresponding to this catalog product card
                         seller_profile = db.query(User).filter(User.id == p_seller_id).first()
                         s_name = "Glameeri Artisan Label"
                         s_bio = "No public studio overview logged yet."
-                        s_img = "https://unsplash.com"
                         s_email = "studio@glameeri.com"
                         
+                        # 🟢 STEP 1: INITIALIZE ABSOLUTE DEFAULT LOCAL AVATAR FALLBACK LINK 🟢
+                        s_img = "https://unsplash.com"
+                        
+                        # Dynamically convert your local images/avatar.png asset into base64 code right now!
+                        local_default_avatar_path = "images/avatar.png"
+                        if os.path.exists(local_default_avatar_path):
+                            try:
+                                with open(local_default_avatar_path, "rb") as fallback_img_file:
+                                    import base64
+                                    raw_b64_bytes = base64.b64encode(fallback_img_file.read())
+                                    clean_b64_string = raw_b64_bytes.decode("utf-8").replace("\n", "").replace("\r", "")
+                                    s_img = f"data:image/png;base64,{clean_b64_string}"
+                            except Exception:
+                                pass
+
+                        # 2. Extract profile fields if the user row exists
                         if seller_profile:
                             s_name = str(getattr(seller_profile, "studio_name", s_name))
                             s_bio = str(getattr(seller_profile, "biography", s_bio))
                             s_email = str(getattr(seller_profile, "email", s_email))
-                            pfp_field = str(getattr(seller_profile, "profile_picture_name", ""))
+                            pfp_field = str(getattr(seller_profile, "profile_picture_name", "")).strip()
+                            
+                            # 🟢 STEP 2: ENFORCE LOCAL PATH PROCESSING FOR THE TRACKER OVERLAY 🟢
                             if pfp_field.startswith("data:image") or pfp_field.startswith("http"):
                                 s_img = pfp_field
+                            elif pfp_field == "images/avatar.png" or pfp_field == "default_profile.png" or pfp_field == "":
+                                # It retains the converted local images/avatar.png Base64 URI string built in step 1!
+                                pass
 
                         # Resolve product display images cleanly
                         store_product_display_source = "https://unsplash.com"
@@ -184,17 +204,18 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                                 ]
                                 store_product_display_source = STOCK_CLOTHING_GALLERY[p_id % len(STOCK_CLOTHING_GALLERY)]
 
+                        # 3. Check if the Identity Sync Tracker state option is toggled on
                         show_profile_card = st.session_state.get("step3_broadcast_profile_parameters", True)
 
                         if show_profile_card:
-                            # Renders the compact verified badge at the top of each item card cleanly!
+                            # ✅ FIXED: Renders the verified creator badge utilizing your local images/avatar.png Base64 output payload string!
                             profile_html_section = f"<input type='checkbox' id='vkStorefrontProfileToggle_{p_id}' class='vk-shop-modal-switch' /><label for='vkStorefrontProfileToggle_{p_id}' style='display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; padding: 10px; margin-bottom: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; cursor: pointer;' title='Click to view profile'><img src='{s_img}' style='width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1.5px solid #E05A47;'/><div style='overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'><p style='margin: 0; font-size: 8px; color: #E05A47; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;'>🌟 Verified Creator (View Profile)</p><h5 style='margin: 0; color: #1e293b; font-size: 12px; font-weight: 800; text-decoration: underline;'>{s_name}</h5></div></label><div class='vk-shop-lightbox-backdrop'><div class='vk-shop-popup-card'><img src='{s_img}' style='width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #E05A47; margin: 0 auto 12px auto; display: block;/><h3 style='margin: 0; color: #1e293b; font-size: 20px; font-weight: 800;'>{s_name}</h3><p style='margin: 4px 0 14px 0; font-size: 12px; color: #E05A47; font-weight: 600;'>{s_email}</p><div style='border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: left;'><span style='font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase;'>📜 Studio Biography:</span><p style='margin: 4px 0 0 0; font-size: 13px; color: #334155; line-height: 1.4; font-style: italic;'>\"{s_bio}\"</p></div><label for='vkStorefrontProfileToggle_{p_id}' class='vk-shop-modal-close-btn'>↩️ Close Studio Profile</label></div></div>"
                             st.markdown(profile_html_section, unsafe_allow_html=True)
 
                         # Render the clean design clothing product graphic securely
                         st.image(store_product_display_source, use_container_width=True)
 
-                        # Description metadata box module
+                        # Description metadata module text box
                         clean_prod_desc = str(prod_data["description"])
                         st.markdown(
                             f"""
@@ -206,6 +227,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             """, 
                             unsafe_allow_html=True
                         )
+
 
                         # Standard transactional shopping button interface
                         if st.button("🛒 Append to Cart", key=f"add_cart_btn_{p_id}", use_container_width=True):
