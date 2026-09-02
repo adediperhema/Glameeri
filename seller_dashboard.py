@@ -126,77 +126,92 @@ def render_seller_dashboard_suite(db, token_user_id):
         unsafe_allow_html=True,
     )
 
-    # st.markdown("### 📊 Live Analytics & Financial Performance Insights")
 
-    # 🔥 FIX: Direct local inline imports instantly clear the red text lines!
-    from typing import Any
-    from sqlalchemy import and_
-    import database  # Import the root module to bypass aliased lookup lags
+    # =========================================================================
+    # 🟢 REAL-TIME DATA PROCESSING LAYER (NO SIMULATIONS / NO FABRICATIONS) 🟢
+    # =========================================================================
+    try:
+        # 1. Calculate Aggregate Studio Revenue (Finalized Paid Checkouts)
+        total_revenue_query = db_session.query(
+            func.sum(Order.quantity * Order.unit_price)
+        ).filter(Order.seller_id == token_user_id, Order.status == "paid").scalar()
+        live_studio_revenue = float(total_revenue_query) if total_revenue_query is not None else 0.00
 
-    # Pull the exact table object reference directly from your database module fields
-    safe_order_model: Any = getattr(database, "Order")
+        # 2. Calculate Total Apparel Units Processed
+        total_units_query = db_session.query(
+            func.sum(Order.quantity)
+        ).filter(Order.seller_id == token_user_id, Order.status == "paid").scalar()
+        live_units_processed = int(total_units_query) if total_units_query is not None else 0
 
-    completed_sales = (
-        db.query(safe_order_model)
-        .filter(
-            and_(
-                getattr(safe_order_model, "seller_id") == token_user_id,
-                getattr(safe_order_model, "status") == "paid",
-            )
-        )
-        .all()
-    )
+        # 3. Calculate Mean Order Transaction Weight
+        mean_transaction_query = db_session.query(
+            func.avg(Order.quantity * Order.unit_price)
+        ).filter(Order.seller_id == token_user_id, Order.status == "paid").scalar()
+        live_mean_order_weight = float(mean_transaction_query) if mean_transaction_query is not None else 0.00
 
-    if not completed_sales:
-        st.info(
-            "📊 Staging analytical frameworks... Generating sales baseline simulations based on marketplace data rules."
-        )
-        # Generates fallback evaluation data arrays if live store history is empty
-        dates = pd.date_range(end=pd.Timestamp.now(), periods=15, freq="D")
-        sales_curve = np.random.randint(100, 1500, size=15)
-        volume_curve = np.random.randint(1, 12, size=15)
-        df_insights = pd.DataFrame(
-            {
-                "Date": dates,
-                "Gross Revenue ($)": sales_curve,
-                "Items Sold": volume_curve,
-            }
-        )
+        # 4. Fetch Raw Order History Data array for dynamic chart vectors parsing
+        raw_orders_history = db_session.query(
+            Order.created_at,
+            Order.quantity,
+            Order.unit_price,
+            Product.title.label("product_title")
+        ).join(Product, Order.product_id == Product.id).filter(
+            Order.seller_id == token_user_id,
+            Order.status == "paid"
+        ).all()
+
+    except Exception as db_metrics_error:
+        st.error(f"❌ Real-time analytics streaming error: {db_metrics_error}")
+        live_studio_revenue = 0.00
+        live_units_processed = 0
+        live_mean_order_weight = 0.00
+        raw_orders_history = []
+
+    # =========================================================================
+    # 📈 VISUAL RENDERING LAYER: VALUE METRIC CARDS
+    # =========================================================================
+    metric_col1, metric_col2, metric_col3 = st.columns(3, gap="large")
+    with metric_col1:
+        st.metric(label="💵 Aggregate Studio Revenue", value=f"${live_studio_revenue:,.2f}")
+    with metric_col2:
+        st.metric(label="📦 Total Apparel Units Processed", value=f"{live_units_processed:,} units")
+    with metric_col3:
+        st.metric(label="📈 Mean Order Transaction Weight", value=f"${live_mean_order_weight:,.2f}")
+
+    st.markdown("<br/>", unsafe_allow_html=True)
+
+    # =========================================================================
+    # 📉 DYNAMIC GRAPH VISUALIZATION MATRIX (PANDAS POWERED) 📉
+    # =========================================================================
+    if not raw_orders_history:
+        st.info("📊 Sales chart canvas staging... Finalize storefront customer checkouts to plot performance graphs.")
     else:
-        sales_records = []
-        for order in completed_sales:
-            sales_records.append(
-                {
-                    "Date": order.created_at,
-                    "Gross Revenue ($)": order.unit_price * order.quantity,
-                    "Items Sold": order.quantity,
-                }
-            )
-        df_insights = pd.DataFrame(sales_records)
-        df_insights = df_insights.sort_values(by="Date")
+        # Convert raw row tuples into a clean DataFrame structure on your CPU
+        chart_df_payload = pd.DataFrame([{
+            "Date": pd.to_datetime(order.created_at).date(),
+            "Total_Sales_Value": float(order.quantity * order.unit_price),
+            "Units_Sold": int(order.quantity),
+            "Product": str(order.product_title)
+        } for order in raw_orders_history])
 
-    # Present structured dashboard metrics charts side-by-side
-    m_col1, m_col2, m_col3 = st.columns(3)
-    with m_col1:
-        st.metric(
-            "Aggregate Studio Revenue",
-            f"{profile.payout_currency} {df_insights['Gross Revenue ($)'].sum():,.2f}",
-        )
-    with m_col2:
-        st.metric("Total Apparel Units Processed", int(df_insights["Items Sold"].sum()))
-    with m_col3:
-        avg_basket = (
-            df_insights["Gross Revenue ($)"].mean() if not df_insights.empty else 0.0
-        )
-        st.metric(
-            "Mean Order Transaction Weight",
-            f"{profile.payout_currency} {avg_basket:,.2f}",
-        )
+        # Generate a distinct split dashboard layout row for charts
+        chart_col1, chart_col2 = st.columns(2, gap="large")
 
-    # Display clean visual data charts
-    st.line_chart(
-        data=df_insights, x="Date", y="Gross Revenue ($)", use_container_width=True
-    )
+        with chart_col1:
+            st.markdown("##### 📈 Daily Studio Revenue Projection Timeline")
+            # Accumulate and group totals by calendar date records cleanly
+            timeline_data = chart_df_payload.groupby("Date")["Total_Sales_Value"].sum().reset_index()
+            timeline_data = timeline_data.set_index("Date")
+            # Render native line chart showing timeline revenue spikes
+            st.line_chart(timeline_data, y="Total_Sales_Value", color="#E05A47")
+
+        with chart_col2:
+            st.markdown("##### 📊 Product Sales Volume Distribution")
+            # Group product units sold to identify high-converting catalog trends
+            volume_distribution = chart_df_payload.groupby("Product")["Units_Sold"].sum().reset_index()
+            volume_distribution = volume_distribution.set_index("Product")
+            # Render native bar chart charting inventory volume weights
+            st.bar_chart(volume_distribution, y="Units_Sold", color="#1e293b")
 
     # AUTOMATED STRATEGIC ADVISORY SUITE Engine
     st.markdown(
