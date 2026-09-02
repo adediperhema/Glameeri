@@ -3233,11 +3233,11 @@ elif st.session_state.get("app_view") == "is_logged_in":
                             st.rerun()
                         else:
                             st.error(
-                                "❌ Invalid session coordinates or wrong credentials. (Password mismatch)"
+                                "❌ Wrong credentials. Please enter the right email and password."
                             )
                     else:
                         st.error(
-                            "❌ Invalid session coordinates or wrong credentials. (Account not found)"
+                            "❌ Wrong credentials. (Account not found)"
                         )
                 except Exception as login_err:
                     st.error(f"Authentication system exception: {login_err}")
