@@ -347,37 +347,36 @@ if st.session_state.get("authenticated") == True:
     finally:
         db_session.close()  # Now it is completely safe to close the database session
 
-    active_studio_title: str = str(token_studio_name)
-    avatar_render_source_url = (
-        "https://unsplash.com"  # High fashion default fallback image
-    )
+         active_studio_title = str(token_studio_name)
+        
+        # Absolute backup image URL link placeholder if your local project file is completely missing
+        avatar_render_source_url = "https://unsplash.com" 
 
-    # =========================================================================
-    # 🪡 FIX 2: BASE64 CLOUD STRING INTERPRETATION LOGIC (NO DISK CHECKS) 🪡
-    # =========================================================================
-    if active_avatar_name and active_avatar_name != "default_profile.png":
-        # If the string starts with data:image, it means it's our new persistent Base64 cloud file stream!
-        if active_avatar_name.startswith("data:image"):
-            avatar_render_source_url = active_avatar_name
+        # =========================================================================
+        # 🪡 FIX: FORCE DIRECT LOCAL CONVERSION FOR "images/avatar.png" DEFAULT 🪡
+        # =========================================================================
+        # Strips out white spaces and sanitizes incoming string parameters
+        cleaned_avatar_field = str(active_avatar_name).strip()
+
+        # 🟢 Condition A: If it's a dynamic live Base64 data-URI string or public web HTTP link
+        if cleaned_avatar_field.startswith("data:image") or cleaned_avatar_field.startswith("http"):
+            avatar_render_source_url = cleaned_avatar_field
+            
+        # 🟢 Condition B: If it's empty, default, or explicitly set to your target local path
         else:
-            # Fallback legacy check just in case an old local text filename is still registered in your rows
-            local_avatar_disk_path = os.path.join("profile_pics", active_avatar_name)
-            if os.path.exists(local_avatar_disk_path):
+            # Enforce an absolute match fallback to your local images folder!
+            local_project_path = "images/avatar.png"
+            
+            if os.path.exists(local_project_path):
                 try:
-                    with open(local_avatar_disk_path, "rb") as image_file:
+                    with open(local_project_path, "rb") as image_file:
                         import base64
-
                         raw_b64_bytes = base64.b64encode(image_file.read())
-                        clean_b64_string = (
-                            raw_b64_bytes.decode("utf-8")
-                            .replace("\n", "")
-                            .replace("\r", "")
-                        )
-                        avatar_render_source_url = (
-                            f"data:image/png;base64,{clean_b64_string}"
-                        )
+                        clean_b64_string = raw_b64_bytes.decode("utf-8").replace("\n", "").replace("\r", "")
+                        avatar_render_source_url = f"data:image/png;base64,{clean_b64_string}"
                 except Exception:
                     pass
+
 
     # 🔥 Sidebar payload with solid crisp white parameters (#ffffff)
     sidebar_profile_html_payload = (
