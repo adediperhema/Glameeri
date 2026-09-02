@@ -7,6 +7,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from database import SellerProfile, DashboardProduct, Order, Product
+from database import get_db_session
+
+# This creates a session that inherits the engine bind rules we just configured above
+db_session = get_db_session()
 
 # Place this at the absolute top line of your seller_dashboard.py file
 from time import (
@@ -16,7 +20,7 @@ from time import (
 
 def render_seller_dashboard_suite(db, token_user_id):
 
-    # st.markdown("## 📈 Artisan Merchant & Shop Dashboard Center")
+    # st.markdown("## 📈 Merchant & Shop Dashboard")
 
     # -------------------------------------------------------------------
     # PART A: MERCHANT BRAND PROFILE METADATA SECTION
@@ -174,12 +178,19 @@ def render_seller_dashboard_suite(db, token_user_id):
             Order.status == "paid"
         ).all()
 
+        # 🚀 5. NEW: CHECK FOR ACTIVE DEPLOYED ITEMS ON THE LIVE STOREFRONT 🚀
+        # Counts public product catalog rows matching this seller to enforce your new constraint
+        live_products_count = db_session.query(Product).filter(
+            Product.seller_id == token_user_id
+        ).count()
+
     except Exception as db_metrics_error:
         st.error(f"❌ Real-time analytics streaming error: {db_metrics_error}")
         live_studio_revenue = 0.00
         live_units_processed = 0
         live_mean_order_weight = 0.00
         raw_orders_history = []
+        live_products_count = 0
 
     # =========================================================================
     # 📈 PART C: VISUAL METRIC CARDS DISPLAY
@@ -213,10 +224,8 @@ def render_seller_dashboard_suite(db, token_user_id):
     # =========================================================================
     if not raw_orders_history:
         st.info("📊 Sales chart canvas staging... Finalize storefront customer checkouts to plot performance graphs.")
-        # Ensure our DataFrame variable is safely assigned as empty to prevent down-funnel Advisor NameErrors
         chart_df_payload = pd.DataFrame(columns=["Date", "Total_Sales_Value", "Units_Sold", "Product"])
     else:
-        # Convert raw row tuples into a clean DataFrame structure on your CPU
         chart_df_payload = pd.DataFrame([{
             "Date": pd.to_datetime(order.created_at).date(),
             "Total_Sales_Value": float(order.quantity * order.unit_price),
@@ -224,49 +233,45 @@ def render_seller_dashboard_suite(db, token_user_id):
             "Product": str(order.product_title)
         } for order in raw_orders_history])
 
-        # Generate a distinct split dashboard layout row for charts
         chart_col1, chart_col2 = st.columns(2, gap="large")
 
         with chart_col1:
             st.markdown("##### 📈 Daily Studio Revenue Projection Timeline")
-            # Accumulate and group totals by calendar date records cleanly
             timeline_data = chart_df_payload.groupby("Date")["Total_Sales_Value"].sum().reset_index()
             timeline_data = timeline_data.set_index("Date")
-            # Render native line chart showing timeline revenue spikes
             st.line_chart(timeline_data, y="Total_Sales_Value", color="#E05A47")
 
         with chart_col2:
             st.markdown("##### 📊 Product Sales Volume Distribution")
-            # Group product units sold to identify high-converting catalog trends
             volume_distribution = chart_df_payload.groupby("Product")["Units_Sold"].sum().reset_index()
             volume_distribution = volume_distribution.set_index("Product")
-            # Render native bar chart charting inventory volume weights
             st.bar_chart(volume_distribution, y="Units_Sold", color="#1e293b")
 
     st.markdown("<br/>", unsafe_allow_html=True)
-    st.divider()
 
     # =========================================================================
-    # 🧠 PART E: AUTOMATED AI RETAIL ADVISOR INTEGRATION 🧠
+    # 🧠 PART E: CONDITIONALLY RENDER AUTOMATED AI RETAIL ADVISOR 🧠
     # =========================================================================
-    st.markdown("#### 💡 Automated AI Retail Advisor Integration")
-    
-    # ✅ FIXED SYSTEM ANCHOR: Safe lookups directly evaluate live parameters out of your Pandas column metrics!
-    if not chart_df_payload.empty:
-        total_sales_volume = int(chart_df_payload["Units_Sold"].sum())
-    else:
-        total_sales_volume = 0
+    # ✅ FIXED: Enforced strict constraint gate layout. Advisor displays ONLY if user has product(s) live!
+    if live_products_count > 0:
+        st.divider()
+        st.markdown("#### 💡 Automated AI Retail Advisor Integration")
+        
+        if not chart_df_payload.empty:
+            total_sales_volume = int(chart_df_payload["Units_Sold"].sum())
+        else:
+            total_sales_volume = 0
 
-    if total_sales_volume < 10:
-        st.info(
-            f"🧠 **Artisan Insights Engine Recommendation:** Your current sales output metric sits at **{total_sales_volume} unit(s)**. "
-            "We recommend adding custom descriptive notes, tags, or style cuts to your product metadata profiles to maximize organic buyer discovery."
-        )
-    else:
-        st.success(
-            f"👑 **Artisan Insights Engine Recommendation:** Excellent retail traction! Your atelier has processed **{total_sales_volume} volume units** successfully. "
-            "Maintain digital inventory scaling consistency to lock down your wholesale customer marketplace margins."
-        )
+        if total_sales_volume < 10:
+            st.info(
+                f"🧠 **Artisan Insights Engine Recommendation:** Your current sales output metric sits at **{total_sales_volume} unit(s)** across your **{live_products_count} live storefront item(s)**. "
+                "We recommend adding custom descriptive notes, tags, or style cuts to your product metadata profiles to maximize organic buyer discovery."
+            )
+        else:
+            st.success(
+                f"👑 **Artisan Insights Engine Recommendation:** Excellent retail traction! Your atelier has processed **{total_sales_volume} volume units** successfully across your live catalog. "
+                "Maintain digital inventory scaling consistency to lock down your wholesale customer marketplace margins."
+            )
 
     st.divider()
 
