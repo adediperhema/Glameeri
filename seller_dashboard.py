@@ -127,26 +127,38 @@ def render_seller_dashboard_suite(db, token_user_id):
     )
 
 
+    st.caption("Review your live shop sales volume velocity, gross currency accruals, and style asset analytics.")
+    st.divider()
+
     # =========================================================================
-    # 🟢 REAL-TIME DATA PROCESSING LAYER (NO SIMULATIONS / NO FABRICATIONS) 🟢
+    # 🟢 PART B: REAL-TIME DATA PROCESSING LAYER (NO SIMULATIONS) 🟢
     # =========================================================================
     try:
-        # 1. Calculate Aggregate Studio Revenue (Finalized Paid Checkouts)
+        # 1. Calculate Aggregate Studio Revenue (Finalized Paid Checkouts Only)
         total_revenue_query = db_session.query(
             func.sum(Order.quantity * Order.unit_price)
-        ).filter(Order.seller_id == token_user_id, Order.status == "paid").scalar()
+        ).filter(
+            Order.seller_id == token_user_id, 
+            Order.status == "paid"
+        ).scalar()
         live_studio_revenue = float(total_revenue_query) if total_revenue_query is not None else 0.00
 
         # 2. Calculate Total Apparel Units Processed
         total_units_query = db_session.query(
             func.sum(Order.quantity)
-        ).filter(Order.seller_id == token_user_id, Order.status == "paid").scalar()
+        ).filter(
+            Order.seller_id == token_user_id, 
+            Order.status == "paid"
+        ).scalar()
         live_units_processed = int(total_units_query) if total_units_query is not None else 0
 
-        # 3. Calculate Mean Order Transaction Weight
+        # 3. Calculate Mean Order Transaction Weight (Mathematical Average per checkout)
         mean_transaction_query = db_session.query(
             func.avg(Order.quantity * Order.unit_price)
-        ).filter(Order.seller_id == token_user_id, Order.status == "paid").scalar()
+        ).filter(
+            Order.seller_id == token_user_id, 
+            Order.status == "paid"
+        ).scalar()
         live_mean_order_weight = float(mean_transaction_query) if mean_transaction_query is not None else 0.00
 
         # 4. Fetch Raw Order History Data array for dynamic chart vectors parsing
@@ -155,7 +167,9 @@ def render_seller_dashboard_suite(db, token_user_id):
             Order.quantity,
             Order.unit_price,
             Product.title.label("product_title")
-        ).join(Product, Order.product_id == Product.id).filter(
+        ).join(
+            Product, Order.product_id == Product.id
+        ).filter(
             Order.seller_id == token_user_id,
             Order.status == "paid"
         ).all()
@@ -168,23 +182,39 @@ def render_seller_dashboard_suite(db, token_user_id):
         raw_orders_history = []
 
     # =========================================================================
-    # 📈 VISUAL RENDERING LAYER: VALUE METRIC CARDS
+    # 📈 PART C: VISUAL METRIC CARDS DISPLAY
     # =========================================================================
     metric_col1, metric_col2, metric_col3 = st.columns(3, gap="large")
+    
     with metric_col1:
-        st.metric(label="💵 Aggregate Studio Revenue", value=f"${live_studio_revenue:,.2f}")
+        st.metric(
+            label="💵 Aggregate Studio Revenue", 
+            value=f"${live_studio_revenue:,.2f}",
+            help="Total gross currency accruals recorded from validated buyer checkouts inside your store."
+        )
     with metric_col2:
-        st.metric(label="📦 Total Apparel Units Processed", value=f"{live_units_processed:,} units")
+        st.metric(
+            label="📦 Total Apparel Units Processed", 
+            value=f"{live_units_processed:,} units",
+            help="Cumulative volume summation of garment units sold and fulfilled across active client tracks."
+        )
     with metric_col3:
-        st.metric(label="📈 Mean Order Transaction Weight", value=f"${live_mean_order_weight:,.2f}")
+        st.metric(
+            label="📈 Mean Order Transaction Weight", 
+            value=f"${live_mean_order_weight:,.2f}",
+            help="The mathematical average invoice valuation calculated per individual customer checkout event."
+        )
 
     st.markdown("<br/>", unsafe_allow_html=True)
+    st.divider()
 
     # =========================================================================
-    # 📉 DYNAMIC GRAPH VISUALIZATION MATRIX (PANDAS POWERED) 📉
+    # 📉 PART D: DYNAMIC GRAPH VISUALIZATION MATRIX (PANDAS POWERED) 📉
     # =========================================================================
     if not raw_orders_history:
         st.info("📊 Sales chart canvas staging... Finalize storefront customer checkouts to plot performance graphs.")
+        # Ensure our DataFrame variable is safely assigned as empty to prevent down-funnel Advisor NameErrors
+        chart_df_payload = pd.DataFrame(columns=["Date", "Total_Sales_Value", "Units_Sold", "Product"])
     else:
         # Convert raw row tuples into a clean DataFrame structure on your CPU
         chart_df_payload = pd.DataFrame([{
@@ -213,21 +243,29 @@ def render_seller_dashboard_suite(db, token_user_id):
             # Render native bar chart charting inventory volume weights
             st.bar_chart(volume_distribution, y="Units_Sold", color="#1e293b")
 
-    # AUTOMATED STRATEGIC ADVISORY SUITE Engine
-    st.markdown(
-        "<h1 style='font-size: 19px; font-weight: bold;'>💡 Automated AI Retail Advisor Integration</h1>",
-        unsafe_allow_html=True,
-    )
+    st.markdown("<br/>", unsafe_allow_html=True)
+    st.divider()
 
-    # st.markdown("#### 💡 Automated AI Retail Advisor Integration")
-    total_sales_volume = df_insights["Items Sold"].sum()
+    # =========================================================================
+    # 🧠 PART E: AUTOMATED AI RETAIL ADVISOR INTEGRATION 🧠
+    # =========================================================================
+    st.markdown("#### 💡 Automated AI Retail Advisor Integration")
+    
+    # ✅ FIXED SYSTEM ANCHOR: Safe lookups directly evaluate live parameters out of your Pandas column metrics!
+    if not chart_df_payload.empty:
+        total_sales_volume = int(chart_df_payload["Units_Sold"].sum())
+    else:
+        total_sales_volume = 0
+
     if total_sales_volume < 10:
         st.info(
-            "🧠 **Artisan Insights Engine Recommendation:** Your current conversion velocity is light. We suggest updating your **Lookbook Query Finder Search Notes** with high-traffic seasonal parameters like *'Harmattan Wax'* or *'Lagos Luxury 2026'*. Your price parameters are stable; consider creating matching accessories to bundle with your tops."
+            f"🧠 **Artisan Insights Engine Recommendation:** Your current sales output metric sits at **{total_sales_volume} unit(s)**. "
+            "We recommend adding custom descriptive notes, tags, or style cuts to your product metadata profiles to maximize organic buyer discovery."
         )
     else:
         st.success(
-            "🧠 **Artisan Insights Engine Recommendation:** Strong performance metrics observed over torso categories! Fabric pattern line optimization scales show heavy demand for *Modern Afro-Futurism*. We suggest slightly raising the list price boundary for your top 3 designs by 8% to maximize your net artisan payout margins during upcoming peak seasons."
+            f"👑 **Artisan Insights Engine Recommendation:** Excellent retail traction! Your atelier has processed **{total_sales_volume} volume units** successfully. "
+            "Maintain digital inventory scaling consistency to lock down your wholesale customer marketplace margins."
         )
 
     st.divider()
