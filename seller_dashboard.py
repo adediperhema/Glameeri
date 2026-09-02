@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from database import SellerProfile, DashboardProduct, Order, Product
+from sqlalchemy import func  
 from database import get_db_session
 
 # This creates a session that inherits the engine bind rules we just configured above
