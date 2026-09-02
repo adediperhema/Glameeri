@@ -347,7 +347,7 @@ if st.session_state.get("authenticated") == True:
     finally:
         db_session.close()  # Now it is completely safe to close the database session
 
-         active_studio_title = str(token_studio_name)
+        active_studio_title = str(token_studio_name)
         
         # Absolute backup image URL link placeholder if your local project file is completely missing
         avatar_render_source_url = "https://unsplash.com" 
