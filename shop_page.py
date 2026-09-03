@@ -26,7 +26,7 @@ ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
 # =========================================================================
 # 🟢 STEP 1: ISOLATED RAW DATA QUERIES (THIS CAN BE CACHED)
 # =========================================================================
-@st.cache_data(ttl=180)
+@st.cache_data(ttl=60)
 def fetch_cached_storefront_catalog(_db_session, search_query: str):
     """
     Queries your remote Supabase cluster once and saves the catalog list primitive variables 
@@ -149,7 +149,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
         
         # Build clean relational subqueries to handle multi-column index queries smoothly
-        fetch_cached_storefront_catalog(db, search_query)
+            fetch_cached_storefront_catalog(db, search_query)
             # Render catalog items cleanly distributed into 3 columns per row
             for row_idx in range(0, len(decoupled_catalog), 3):
                 grid_cols = st.columns(3, gap="medium")
