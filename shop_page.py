@@ -213,7 +213,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             st.markdown(profile_html_section, unsafe_allow_html=True)
 
                         # Render the clean design clothing product graphic securely
-                        st.image(store_product_display_source, use_container_width=True)
+                        st.image(store_product_display_source, width="stretch")
 
                         # Description metadata module text box
                         clean_prod_desc = str(prod_data["description"])
@@ -230,7 +230,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
 
                         # Standard transactional shopping button interface
-                        if st.button("🛒 Append to Cart", key=f"add_cart_btn_{p_id}", use_container_width=True):
+                        if st.button("🛒 Append to Cart", key=f"add_cart_btn_{p_id}", width="stretch"):
                             new_cart_entry = Order(buyer_id=token_user_id, seller_id=p_seller_id, product_id=p_id, status="cart", quantity=1, unit_price=prod_data['price'])
                             db.add(new_cart_entry)
                             db.commit()
@@ -243,13 +243,13 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             btn_label = "✨ Try On (Premium Active)" if has_premium else ("✨ Try On" if free_left > 0 else "🔒 Try On (Limit Exceeded)")
                             disabled_flag = False if (has_premium or free_left > 0) else True
 
-                            if st.button(btn_label, key=f"tryon_act_{p_id}", disabled=disabled_flag, use_container_width=True):
+                            if st.button(btn_label, key=f"tryon_act_{p_id}", disabled=disabled_flag, width="stretch"):
                                 st.session_state["active_tryon_target_product_id"] = p_id
                                 st.rerun()
 
                         else:
                             # Render a locked/read-only indicator card for external general storefront browsers
-                            st.button("🔒 Try On (Isolated to Designer Session)", key=f"disabled_tryon_mask_{p_id}", disabled=True, use_container_width=True)
+                            st.button("🔒 Try On (Isolated to Designer Session)", key=f"disabled_tryon_mask_{p_id}", disabled=True, width="stretch")
 
         # --- DYNAMIC ATTACHMENT: SLIDER CONTROLS RENDERING IN AN ISOLATED FRAGMENT CANVAS ---
         target_selection_id = st.session_state.get("active_tryon_target_product_id", None)
@@ -278,9 +278,9 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
                         action_row1, action_row2 = st.columns(2)
                         with action_row1:
-                            execute_render = st.form_submit_button("✨ Apply & Replace Clothing", type="primary", use_container_width=True)
+                            execute_render = st.form_submit_button("✨ Apply & Replace Clothing", type="primary", width="stretch")
                         with action_row2:
-                            clear_canvas = st.form_submit_button("↩️ Clear Selection Canvas", use_container_width=True)
+                            clear_canvas = st.form_submit_button("↩️ Clear Selection Canvas", width="stretch")
 
                     if clear_canvas:
                         st.session_state["active_tryon_target_product_id"] = None
@@ -380,7 +380,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     active_render_key = f"active_tryon_render_{active_product.id}"
                     if st.session_state.get(active_render_key) is not None:
                         st.markdown("<div style='border: 2px dashed #15c39a; padding: 15px; border-radius: 8px; background-color: #f0fdf4; margin-top: 15px;'>", unsafe_allow_html=True)
-                        st.image(st.session_state[active_render_key], caption="Tailored Output Local Fit", use_container_width=True)
+                        st.image(st.session_state[active_render_key], caption="Tailored Output Local Fit", width="stretch")
                         
                         close_col1, close_col2 = st.columns(2)
                         with close_col1:
@@ -389,11 +389,11 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                                 data=st.session_state[active_render_key],
                                 file_name=f"fitted_{str(active_product.title).lower()}.png",
                                 mime="image/png",
-                                use_container_width=True,
+                                width="stretch",
                                 key=f"dl_button_catalog_{active_product.id}"
                             )
                         with close_col2:
-                            if st.button("❌ Close Canvas Preview", key=f"close_canvas_fitter_{active_product.id}", use_container_width=True, type="secondary"):
+                            if st.button("❌ Close Canvas Preview", key=f"close_canvas_fitter_{active_product.id}", width="stretch", type="secondary"):
                                 st.session_state[active_render_key] = None
                                 st.rerun()
                         st.markdown("</div>", unsafe_allow_html=True)
@@ -401,7 +401,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     # ✅ FIXED: Now uses the parameter variable 'is_disabled_flag' passed safely into the function scope!
                     if is_disabled_flag:
                         st.caption("⚠️ Try-On threshold exceeded.")
-                        if st.button("Unlock Unlimited ($9.99)", key=f"premium_buy_{active_product.id}", type="primary", use_container_width=True):
+                        if st.button("Unlock Unlimited ($9.99)", key=f"premium_buy_{active_product.id}", type="primary", width="stretch"):
                             try:
                                 req_payload = {
                                     "email": buyer_email,
@@ -513,7 +513,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 if st.button(
                     "🗑️ Drop Item",
                     key=f"right_panel_drop_{current_order.id}",
-                    use_container_width=True,
+                    width="stretch",
                     type="secondary",
                 ):
                     db.delete(current_order)
@@ -529,7 +529,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 "🚀 Pay with Paystack Gateway",
                 key="right_panel_paystack_cta",
                 type="primary",
-                use_container_width=True,
+                width="stretch",
             ):
                 try:
                     req_payload = {
