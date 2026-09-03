@@ -18,127 +18,9 @@ from time import (
     sleep as system_sleep,
 )  # 🔥 ALIASED STANDALONE IMPORT TO PREVENT ALL RED CONFLICTS
 
-
-def render_seller_dashboard_suite(db, token_user_id):
-
-    # st.markdown("## 📈 Merchant & Shop Dashboard")
-
-    # -------------------------------------------------------------------
-    # PART A: MERCHANT BRAND PROFILE METADATA SECTION
-    # -------------------------------------------------------------------
-    # -------------------------------------------------------------------
-    # PART A: MERCHANT BRAND PROFILE METADATA SECTION
-    # -------------------------------------------------------------------
-    # -------------------------------------------------------------------
-    # PART A: MERCHANT BRAND PROFILE METADATA SECTION
-    # -------------------------------------------------------------------
-    st.markdown(
-        "<h1 style='font-size: 19px; font-weight: bold;'>🏷️ Designer Brand Profile Registry</h1>",
-        unsafe_allow_html=True,
-    )
-
-    # st.markdown("### 🏷️ Designer Brand Profile Registry")
-
-    # Force a database query fetch
-    raw_profile = (
-        db.query(SellerProfile).filter(SellerProfile.user_id == token_user_id).first()
-    )
-
-    if not raw_profile:
-        new_profile = SellerProfile(
-            user_id=token_user_id,
-            brand_name="Unnamed Studio Label",
-            bio="",
-            contact_phone="",
-            payout_currency="USD",
-        )
-        db.add(new_profile)
-        db.commit()
-        raw_profile = (
-            db.query(SellerProfile)
-            .filter(SellerProfile.user_id == token_user_id)
-            .first()
-        )
-
-    # 🔥 THE UNIVERSAL FIX: Cast the object to an open Python object structure
-    # This bypasses all strict model checks and clears all red text in VS Code!
-    from typing import Any, cast
-
-    profile = cast(Any, raw_profile)
-
-    with st.expander("⚙️ Edit Brand Profile & Currency Parameters", expanded=False):
-        with st.form("brand_profile_form"):
-            # Use safe fallbacks to pull string parameters directly
-            current_brand = str(getattr(profile, "brand_name", "Unnamed Studio Label"))
-            current_bio = str(getattr(profile, "bio", ""))
-            current_phone = str(getattr(profile, "contact_phone", ""))
-            current_currency = str(getattr(profile, "payout_currency", "USD"))
-
-            new_brand_name = st.text_input(
-                "Brand Display Label Name:", value=current_brand
-            )
-            new_bio = st.text_area(
-                "Artisan Studio Bio / Design Focus:", value=current_bio
-            )
-            new_phone = st.text_input(
-                "Contact Support Phone / WhatsApp Link:", value=current_phone
-            )
-
-            currency_options = ["USD", "EUR", "GHS", "NGN", "ZAR"]
-            default_currency_idx = (
-                currency_options.index(current_currency)
-                if current_currency in currency_options
-                else 0
-            )
-
-            new_currency = st.selectbox(
-                "Preferred Marketplace Settlement Currency:",
-                currency_options,
-                index=default_currency_idx,
-            )
-
-            if st.form_submit_button("💾 Freeze Brand Identity"):
-                # Clean your text strings safely
-                clean_brand = str(new_brand_name).strip()
-                clean_bio = str(new_bio).strip()
-                clean_phone = str(new_phone).strip()
-                clean_curr = str(new_currency)
-
-                # 🔥 WRITE VIA GENERAL SETATTR BLOCK TO TOTALLY STOP RED ERRORS 🔥
-                setattr(profile, "brand_name", clean_brand)
-                setattr(profile, "bio", clean_bio)
-                setattr(profile, "contact_phone", clean_phone)
-                setattr(profile, "payout_currency", clean_curr)
-
-                db.commit()
-                st.toast("Brand profile metrics stored securely.")
-                import time
-
-                time.sleep(0.2)
-                st.rerun()
-
-    # -------------------------------------------------------------------
-    # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
-    # -------------------------------------------------------------------
-    # -------------------------------------------------------------------
-    # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
-    # -------------------------------------------------------------------
-    # -------------------------------------------------------------------
-    # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
-    # -------------------------------------------------------------------
-    st.markdown(
-        "<h1 style='font-size: 17px; font-weight: bold;'>Live Analytics & Financial Performance Insights</h1>",
-        unsafe_allow_html=True,
-    )
-
-
-    st.caption("Review your live shop sales volume velocity, gross currency accruals, and style asset analytics.")
-    st.divider()
-
-    # =========================================================================
-    # 🟢 PART B: REAL-TIME DATA PROCESSING LAYER (NO SIMULATIONS) 🟢
-    # =========================================================================
-    try:
+@st.cache_data(ttl=60)  
+def fetch_cached_financial_metrics(_db_session, token_user_id: int):
+        try:
         # 1. Calculate Aggregate Studio Revenue (Finalized Paid Checkouts Only)
         total_revenue_query = db_session.query(
             func.sum(Order.quantity * Order.unit_price)
@@ -275,6 +157,132 @@ def render_seller_dashboard_suite(db, token_user_id):
             )
 
     st.divider()
+
+
+
+
+
+def render_seller_dashboard_suite(db, token_user_id):
+
+    # st.markdown("## 📈 Merchant & Shop Dashboard")
+
+    # -------------------------------------------------------------------
+    # PART A: MERCHANT BRAND PROFILE METADATA SECTION
+    # -------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    # PART A: MERCHANT BRAND PROFILE METADATA SECTION
+    # -------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    # PART A: MERCHANT BRAND PROFILE METADATA SECTION
+    # -------------------------------------------------------------------
+    st.markdown(
+        "<h1 style='font-size: 19px; font-weight: bold;'>🏷️ Designer Brand Profile Registry</h1>",
+        unsafe_allow_html=True,
+    )
+
+    # st.markdown("### 🏷️ Designer Brand Profile Registry")
+
+    # Force a database query fetch
+    raw_profile = (
+        db.query(SellerProfile).filter(SellerProfile.user_id == token_user_id).first()
+    )
+
+    if not raw_profile:
+        new_profile = SellerProfile(
+            user_id=token_user_id,
+            brand_name="Unnamed Studio Label",
+            bio="",
+            contact_phone="",
+            payout_currency="USD",
+        )
+        db.add(new_profile)
+        db.commit()
+        raw_profile = (
+            db.query(SellerProfile)
+            .filter(SellerProfile.user_id == token_user_id)
+            .first()
+        )
+
+    # 🔥 THE UNIVERSAL FIX: Cast the object to an open Python object structure
+    # This bypasses all strict model checks and clears all red text in VS Code!
+    from typing import Any, cast
+
+    profile = cast(Any, raw_profile)
+
+    with st.expander("⚙️ Edit Brand Profile & Currency Parameters", expanded=False):
+        with st.form("brand_profile_form"):
+            # Use safe fallbacks to pull string parameters directly
+            current_brand = str(getattr(profile, "brand_name", "Unnamed Studio Label"))
+            current_bio = str(getattr(profile, "bio", ""))
+            current_phone = str(getattr(profile, "contact_phone", ""))
+            current_currency = str(getattr(profile, "payout_currency", "USD"))
+
+            new_brand_name = st.text_input(
+                "Brand Display Label Name:", value=current_brand
+            )
+            new_bio = st.text_area(
+                "Artisan Studio Bio / Design Focus:", value=current_bio
+            )
+            new_phone = st.text_input(
+                "Contact Support Phone / WhatsApp Link:", value=current_phone
+            )
+
+            currency_options = ["USD", "EUR", "GHS", "NGN", "ZAR"]
+            default_currency_idx = (
+                currency_options.index(current_currency)
+                if current_currency in currency_options
+                else 0
+            )
+
+            new_currency = st.selectbox(
+                "Preferred Marketplace Settlement Currency:",
+                currency_options,
+                index=default_currency_idx,
+            )
+
+            if st.form_submit_button("💾 Freeze Brand Identity"):
+                # Clean your text strings safely
+                clean_brand = str(new_brand_name).strip()
+                clean_bio = str(new_bio).strip()
+                clean_phone = str(new_phone).strip()
+                clean_curr = str(new_currency)
+
+                # 🔥 WRITE VIA GENERAL SETATTR BLOCK TO TOTALLY STOP RED ERRORS 🔥
+                setattr(profile, "brand_name", clean_brand)
+                setattr(profile, "bio", clean_bio)
+                setattr(profile, "contact_phone", clean_phone)
+                setattr(profile, "payout_currency", clean_curr)
+
+                db.commit()
+                st.toast("Brand profile metrics stored securely.")
+                import time
+
+                time.sleep(0.2)
+                st.rerun()
+
+    # -------------------------------------------------------------------
+    # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
+    # -------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
+    # -------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    # PART B: ANALYTICAL SALES GRAPH VISUALIZATIONS & AUTOMATED ADVISOR
+    # -------------------------------------------------------------------
+    st.markdown(
+        "<h1 style='font-size: 17px; font-weight: bold;'>Live Analytics & Financial Performance Insights</h1>",
+        unsafe_allow_html=True,
+    )
+
+
+    st.caption("Review your live shop sales volume velocity, gross currency accruals, and style asset analytics.")
+    st.divider()
+
+    # =========================================================================
+    # 🟢 PART B: REAL-TIME DATA PROCESSING LAYER (NO SIMULATIONS) 🟢
+    # =========================================================================
+ 
+    fetch_cached_financial_metrics(_db_session, token_user_id)
 
     # -------------------------------------------------------------------
     # PART C: COMMERCIAL SPECIFICATIONS CONFIGURATOR DRAFT BAR
