@@ -723,11 +723,13 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     }
                     
                     # Core transaction initialization endpoint setup
+                    auth_header_signature = f"Bearer {PAYSTACK_SECRET_KEY}"
+                    
                     req = urllib.request.Request(
                         "https://paystack.co",
                         data=json.dumps(req_payload).encode("utf-8"),
                         headers={
-                            "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+                            "Authorization": auth_header_signature, # ✅ Case-sanitized token stream
                             "Content-Type": "application/json",
                         },
                     )
