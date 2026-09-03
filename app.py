@@ -469,7 +469,7 @@ if st.session_state.get("authenticated") == True:
     if st.sidebar.button(
         "🔒 SECURE SIGN OUT / LOCK SESSION",
         key="sidebar_logout_cta",
-        use_container_width=True,
+        width="stretch",
     ):
         st.session_state["authenticated"] = False
         st.session_state["is_logged_in"] = False
@@ -967,7 +967,7 @@ if sidebar_selection == "📁 Fabric Collection Manager":
                                         # Translate hex parameters back to clean display bytes natively
                                         raw_swatch_bytes = bytes.fromhex(hex_str)
                                         st.image(
-                                            raw_swatch_bytes, use_container_width=True
+                                            raw_swatch_bytes, width="stretch"
                                         )
                         except Exception as display_err:
                             st.caption(
@@ -986,7 +986,7 @@ if sidebar_selection == "📁 Fabric Collection Manager":
         "👁️ View Onboarded Assets inside Lookbook Portfolio ➔",
         key="fabric_manager_to_portfolio_redirect_cta",
         type="secondary",
-        use_container_width=True,
+        width="stretch",
     ):
         # Update the state routing target string pointer variable
         st.session_state["active_sidebar_tab"] = "🌟 Collection Lookbook Portfolio"
@@ -1187,13 +1187,13 @@ elif sidebar_selection == "🌟 Collection Lookbook Portfolio":
                             st.image(
                                 decoded_raw_bytes,
                                 caption=f"Roll Swatch Roll #{s_idx+1}",
-                                use_container_width=True,
+                                width="stretch",
                             )
                     else:
                         st.image(
                             blob_data,
                             caption="Lookbook Canvas Render",
-                            use_container_width=True,
+                            width="stretch",
                         )
                 except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
                     try:
@@ -1201,7 +1201,7 @@ elif sidebar_selection == "🌟 Collection Lookbook Portfolio":
                         st.image(
                             blob_data,
                             caption="AI Tailored Production Lookbook Blueprint",
-                            use_container_width=True,
+                            width="stretch",
                         )
                     except Exception as render_failure:
                         st.caption(
@@ -1216,7 +1216,7 @@ elif sidebar_selection == "🌟 Collection Lookbook Portfolio":
         # Bottom Actions close container trigger row layout
         if st.button(
             "❌ Close Profile Drawer",
-            use_container_width=True,
+            width="stretch",
             key="close_lookbook_dialog_modal_cta",
         ):
             st.rerun()  # Closes the focus dialog drawer seamlessly
@@ -1295,18 +1295,18 @@ elif sidebar_selection == "🌟 Collection Lookbook Portfolio":
                                     # Show first thumbnail roll swatch inside card
                                     st.image(
                                         bytes.fromhex(parsed_hex_list[0]),
-                                        use_container_width=True,
+                                        width="stretch",
                                     )
                                 else:
-                                    st.image(image_payload, use_container_width=True)
+                                    st.image(image_payload, width="stretch")
                             except Exception:
-                                st.image(image_payload, use_container_width=True)
+                                st.image(image_payload, width="stretch")
 
                         # 🔥 THE TRIGGER CTA: Opens our dynamic modal frame overlay instantly on click pass 🔥
                         if st.button(
                             "🔍 Inspect Profile Workbook",
                             key=f"launch_lightbox_item_idx_{item_id}_{row_idx}_{col_idx}",
-                            use_container_width=True,
+                            width="stretch",
                         ):
                             launch_lookbook_item_lightbox_modal(
                                 title=item_title,
@@ -1396,7 +1396,7 @@ elif sidebar_selection == "📏 Saved Measurements Ledger":
     if st.button(
         "💾 Save to Ledger",
         key="page_ledger_direct_save_cta",
-        use_container_width=True,
+        width="stretch",
     ):
         clean_ledger_name = str(p_client_name).strip()
         if not clean_ledger_name:
@@ -1523,7 +1523,7 @@ elif sidebar_selection == "📏 Saved Measurements Ledger":
                     if st.button(
                         "🗑️ Delete Row",
                         key=f"delete_client_row_id_{row_id}",
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         # inner_db_session = SessionLocal()
                         try:
@@ -1768,7 +1768,7 @@ elif sidebar_selection == "📈 Merchant & Shop Dashboard ":
         # ✅ FIXED: Now safely displays images/avatar.png as the native baseline graphic on your screen!
         st.image(
             avatar_render_source_url,
-            use_container_width=True,
+            width="stretch",
             caption="Active Identity",
         )
 
@@ -1890,7 +1890,7 @@ elif sidebar_selection == "💰 Subscription Pricing Plan":
     if st.button(
         "💳 Authorize Subscription Settlement & Synchronize Workspace",
         key="pricing_execute_checkout_cta",
-        use_container_width=True,
+        width="stretch",
         disabled=not st.session_state.get("authenticated", False),
     ):
         user_session_id_val = st.session_state.get("user_session_id", 0)
@@ -1937,7 +1937,7 @@ elif sidebar_selection == "💰 Subscription Pricing Plan":
                 st.link_button(
                     "➡️ Proceed to PayHub Secure Checkout Portal",
                     checkout_gateway_url,
-                    use_container_width=True,
+                    width="stretch",
                     type="primary",
                 )
 
@@ -2947,7 +2947,7 @@ elif (
     if st.button(
         "✨ Initialize Your Free Studio Workspace Now",
         key="pricing_guest_signup_cta",
-        use_container_width=True,
+        width="stretch",
     ):
         st.session_state["app_view"] = "signup"
         st.rerun()
@@ -3030,7 +3030,7 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
 
         # The submit button stands firmly inside the form block context layout tree
         submit_registration_trigger = st.form_submit_button(
-            "🚀 Complete Account Registration", use_container_width=True
+            "🚀 Complete Account Registration", width="stretch"
         )
 
     # Process the registration database write pipeline ONLY after a valid form submission
@@ -3133,7 +3133,7 @@ elif st.session_state["app_view"] == "signup" and not st.session_state["authenti
         on_click=navigate_to,
         args=("is_logged_in",),
         key="reg_nav_back_unconflicted_trigger_cta",
-        use_container_width=True,
+        width="stretch",
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -3189,7 +3189,7 @@ elif st.session_state.get("app_view") == "is_logged_in":
 
         # 2. Trigger verification when the entry button is clicked
         if st.form_submit_button(
-            "🚀 Enter Production Studio Workspace", use_container_width=True
+            "🚀 Enter Production Studio Workspace", width="stretch"
         ):
 
             # 🔥 FIX 2: Pull input strings directly from your global session state cache registers!
@@ -3448,13 +3448,13 @@ if st.session_state["authenticated"]:
             st.image(
                 st.session_state["active_fabric"],
                 caption="Master Asset Module",
-                use_container_width=True,
+                width="stretch",
             )
         with t2:
             st.image(
                 create_tile_grid(st.session_state["active_fabric"]),
                 caption="Continuous roll simulation",
-                use_container_width=True,
+                width="stretch",
             )
 
         if st.button(
@@ -3600,7 +3600,7 @@ if st.session_state["authenticated"]:
             if st.button(
                 "🚀 Render Imprinted Design Directly Onto Style Silhouette",
                 key="step3_render_action",
-                use_container_width=True,
+                width="stretch",
             ):
                 # 1. Recover current user usage metrics straight from PostgreSQL records
                 user_session_id_val = st.session_state.get("user_session_id", 0)
@@ -3957,7 +3957,7 @@ if st.session_state["authenticated"]:
                 st.image(
                     img_byte_arr.getvalue(),
                     caption="3D Rendered Garment Silhouette Preview",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
                 st.markdown("<br/>", unsafe_allow_html=True)
@@ -3966,14 +3966,14 @@ if st.session_state["authenticated"]:
                     data=img_byte_arr.getvalue(),
                     file_name=f"Glameeri_TryOn_{int(time.time())}.png",
                     mime="image/png",
-                    use_container_width=True,
+                    width="stretch",
                     key="download_tryon_canvas_image_cta",
                 )
             else:
                 st.image(
                     "images/avatar.png",
                     caption="Awaiting Local Imprint Rendering...",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
             # with col_img2:
@@ -4040,7 +4040,7 @@ if st.session_state["authenticated"]:
                     st.image(
                         person_bytes,
                         caption="Custom Client Profile Target Active",
-                        use_container_width=True,
+                        width="stretch",
                     )
 
                 st.divider()
@@ -4158,7 +4158,7 @@ if st.session_state["authenticated"]:
                     st.image(
                         designed_fabric,
                         caption="Active Step 2 Seam Checked Fabric",
-                        use_container_width=True,
+                        width="stretch",
                     )
                 else:
                     st.error(
@@ -4204,7 +4204,7 @@ if st.session_state["authenticated"]:
                 submit_btn = st.button(
                     "✨ Texture Silhouette & Drape Client Model",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     key="step3_submit_pipeline_btn",
                 )
 
@@ -4288,7 +4288,7 @@ if st.session_state["authenticated"]:
                     st.image(
                         cached_lookbook_output,
                         caption=f"AI Tailored Lookbook Active Preview Framework",
-                        use_container_width=True,
+                        width="stretch",
                     )
 
                     st.markdown("</div>", unsafe_allow_html=True)
@@ -4307,7 +4307,7 @@ if st.session_state["authenticated"]:
                     if st.button(
                         "💾 Synchronize to Gallery AND Shop Dashboard",
                         type="primary",
-                        use_container_width=True,
+                        width="stretch",
                         key="step3_double_commit_trigger",
                     ):
                         with st.spinner(
@@ -4433,7 +4433,7 @@ if st.session_state["authenticated"]:
                     st.image(
                         person_bytes,
                         caption="Model Reference Active",
-                        use_container_width=True,
+                        width="stretch",
                     )
 
             with up_col2:
@@ -4448,7 +4448,7 @@ if st.session_state["authenticated"]:
                     st.image(
                         outfit_source_data,
                         caption="Custom Style Clothing Active",
-                        use_container_width=True,
+                        width="stretch",
                     )
 
             st.divider()
@@ -4464,7 +4464,7 @@ if st.session_state["authenticated"]:
                 st.image(
                     designed_fabric,
                     caption="Active Step 2 Seam Checked Fabric",
-                    use_container_width=True,
+                    width="stretch",
                 )
             else:
                 st.error(
@@ -4509,7 +4509,7 @@ if st.session_state["authenticated"]:
             submit_btn = st.button(
                 "✨ Texture Silhouette & Drape Client Model",
                 type="primary",
-                use_container_width=True,
+                width="stretch",
                 key="step3_submit_pipeline_btn",
             )
 
@@ -4523,7 +4523,7 @@ if st.session_state["authenticated"]:
                 submit_btn = st.button(
                     "✨ Texture Silhouette & Drape Client Model",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     key="step3_submit_pipeline_btn2",
                 )
 
@@ -4586,7 +4586,7 @@ if st.session_state["authenticated"]:
                 if st.button(
                     "💾 Synchronize to Gallery AND Shop Dashboard",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     key="step3_double_commit_trigger",
                 ):
                     with st.spinner(
@@ -4704,7 +4704,7 @@ if (
     if st.button(
         "✨ Client Measurement Specification Workbook & Invoice Builder",
         key="trigger_3b_form_drawer_cta",
-        use_container_width=True,
+        width="stretch",
     ):
         # Safely initialize the tracking state key if missing from background layers
         if "show_3b_measurement_form_workbook" not in st.session_state:
@@ -4727,7 +4727,7 @@ if (
         if st.button(
             "🌟 Add to Collection Lookbook Portfolio",
             key="lifecycle_add_to_collection_cta",
-            use_container_width=True,
+            width="stretch",
         ):
             collection_button(
                 garment_cut, token_studio_name, token_user_email, db_session
@@ -4738,7 +4738,7 @@ if (
         if st.button(
             "🚀 Push to Studio Lookbook AND Shop Dashboard",
             type="primary",
-            use_container_width=True,
+            width="stretch",
             key="lifecycle_push_to_shop_cta",
         ):
             with st.spinner(
@@ -4849,7 +4849,7 @@ if (
         if st.button(
             "💾 Save Client Specifications & Commit Order Data",
             key="save_client_measurements_cta",
-            use_container_width=True,
+            width="stretch",
         ):
             user_session_id_val = st.session_state.get("user_session_id", 0)
 
@@ -4925,7 +4925,7 @@ if (
         if st.button(
             "💳 Process PayHub Customer Payment For This Attire Design",
             key="step4_payhub_garment_checkout_cta",
-            use_container_width=True,
+            width="stretch",
         ):
             user_session_id_val = st.session_state.get("user_session_id", 0)
 
@@ -4958,7 +4958,7 @@ if (
                 st.link_button(
                     "🚀 Proceed to PayHub Checkout",
                     attire_payment_url,
-                    use_container_width=True,
+                    width="stretch",
                 )
 
     if st.button(
