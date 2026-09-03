@@ -217,7 +217,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             st.markdown(profile_html_section, unsafe_allow_html=True)
 
                         # Render the clean design clothing product graphic securely
-                        st.image(store_product_display_source, use_container_width=True)
+                        st.image(store_product_display_source, width='stretch')
 
                         # Description metadata module text box
                         clean_prod_desc = str(prod_data["description"])
@@ -235,7 +235,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                         if st.button(
                             "🛒 Append to Cart",
                             key=f"add_cart_btn_{p_id}",
-                            use_container_width=True,
+                            width='stretch',
                         ):
                             new_cart_entry = Order(
                                 buyer_id=token_user_id,
@@ -271,7 +271,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                                 btn_label,
                                 key=f"tryon_act_{p_id}",
                                 disabled=disabled_flag,
-                                use_container_width=True,
+                                width='stretch',
                             ):
                                 st.session_state["active_tryon_target_product_id"] = (
                                     p_id
@@ -341,11 +341,11 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             execute_render = st.form_submit_button(
                                 "✨ Apply & Replace Clothing",
                                 type="primary",
-                                use_container_width=True,
+                                width='stretch',
                             )
                         with action_row2:
                             clear_canvas = st.form_submit_button(
-                                "↩️ Clear Selection Canvas", use_container_width=True
+                                "↩️ Clear Selection Canvas", width='stretch'
                             )
 
                     if clear_canvas:
@@ -509,7 +509,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                         st.image(
                             st.session_state[active_render_key],
                             caption="Tailored Output Local Fit",
-                            use_container_width=True,
+                            width='stretch',
                         )
 
                         close_col1, close_col2 = st.columns(2)
@@ -519,14 +519,14 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                                 data=st.session_state[active_render_key],
                                 file_name=f"fitted_{str(active_product.title).lower()}.png",
                                 mime="image/png",
-                                use_container_width=True,
+                                width='stretch',
                                 key=f"dl_button_catalog_{active_product.id}",
                             )
                         with close_col2:
                             if st.button(
                                 "❌ Close Canvas Preview",
                                 key=f"close_canvas_fitter_{active_product.id}",
-                                use_container_width=True,
+                                width='stretch',
                                 type="secondary",
                             ):
                                 st.session_state[active_render_key] = None
@@ -539,7 +539,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             "Unlock Unlimited ($9.99)",
                             key=f"premium_buy_{active_product.id}",
                             type="primary",
-                            use_container_width=True,
+                            width='stretch',
                         ):
                             try:
                                 req_payload = {
@@ -667,7 +667,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 if st.button(
                     "🗑️ Drop Item",
                     key=f"right_panel_drop_{current_order.id}",
-                    use_container_width=True,
+                    width='stretch',
                     type="secondary",
                 ):
                     db.delete(current_order)
@@ -683,7 +683,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 "🚀 Pay with Paystack Gateway",
                 key="right_panel_paystack_cta",
                 type="primary",
-                use_container_width=True,
+                width='stretch',
             ):
                 try:
                     req_payload = {
