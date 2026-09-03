@@ -11,7 +11,7 @@ from sqlalchemy import func
 from database import get_db_session
 
 # This creates a session that inherits the engine bind rules we just configured above
-db_session = get_db_session()
+_db_session = get_db_session()
 
 # Place this at the absolute top line of your seller_dashboard.py file
 from time import (
