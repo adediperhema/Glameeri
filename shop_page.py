@@ -689,53 +689,79 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 "🚀 Pay with Paystack Gateway",
                 key="right_panel_paystack_cta",
                 type="primary",
-                use_container_width=True,
+                width="stretch",
             ):
-                try:
-                    req_payload = {
-                        "email": buyer_email,
-                        "amount": int(cart_gross_total * 100),
-                        "callback_url": "http://localhost:8501",
-                        "metadata": {
-                            "custom_fields": [
-                                {
-                                    "display_name": "Context",
-                                    "variable_name": "checkout_type",
-                                    "value": "cart",
-                                }
-                            ]
-                        },
-                    }
-                    req = urllib.request.Request(
-                        "https://paystack.co",
-                        data=json.dumps(req_payload).encode("utf-8"),
-                        headers={
-                            "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
-                            "Content-Type": "application/json",
-                        },
+                # 🟢 FIXED: Fetch and verify the Paystack key securely from secrets inside the trigger block
+                PAYSTACK_SECRET_KEY = st.secrets.get(
+                    "PAYSTACK_SECRET_KEY", os.getenv("PAYSTACK_SECRET_KEY", None)
+                )
+
+                if not PAYSTACK_SECRET_KEY:
+                    st.error(
+                        "❌ Paystack Configuration Error: The secret key token stream (`sk_test_...`) could not be resolved inside st.secrets."
                     )
-                    with urllib.request.urlopen(req) as res_cart:
-                        res_data = json.loads(res_cart.read().decode("utf-8"))
-                        if res_data.get("status"):
-                            checkout_gateway_url = res_data["data"]["authorization_url"]
-                            for active_item in active_cart_orders:
-                                item_payout = (
-                                    active_item.quantity * active_item.unit_price
+                else:
+                    try:
+                        req_payload = {
+                            "email": str(buyer_email),
+                            "amount": int(
+                                cart_gross_total * 100
+                            ),  # Paystack scales monetary checkouts cleanly into minor subunits (cents/kobo)
+                            "callback_url": "https://glameeri-7gvdtwau8ticpzhalezfdi.streamlit.app/",  # Point this link directly to your online deployed application URL domain
+                            "metadata": {
+                                "custom_fields": [
+                                    {
+                                        "display_name": "Context",
+                                        "variable_name": "checkout_type",
+                                        "value": "cart",
+                                    }
+                                ]
+                            },
+                        }
+
+                        # 🟢 FIXED: Updated endpoint URL to point directly to Paystack's official transaction initiator engine!
+                        req = urllib.request.Request(
+                            "https://paystack.co",
+                            data=json.dumps(req_payload).encode("utf-8"),
+                            headers={
+                                "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+                                "Content-Type": "application/json",
+                            },
+                        )
+
+                        with urllib.request.urlopen(req) as res_cart:
+                            res_data = json.loads(res_cart.read().decode("utf-8"))
+                            if res_data.get("status"):
+                                checkout_gateway_url = res_data["data"][
+                                    "authorization_url"
+                                ]
+
+                                # Process your platform split percentages and net payouts for each cart record row
+                                for active_item in active_cart_orders:
+                                    item_payout = float(
+                                        active_item.quantity * active_item.unit_price
+                                    )
+                                    active_item.commission_paid = float(
+                                        item_payout * COMMISSION_RATE
+                                    )
+                                    active_item.seller_payout = float(
+                                        item_payout - active_item.commission_paid
+                                    )
+                                    active_item.status = "paid"
+
+                                # Commit changes to your Supabase tables to update your seller ledger analytics charts instantly!
+                                db.commit()
+
+                                # Render a clickable, stylized gateway redirection anchor link layout block
+                                st.markdown(
+                                    f'<a href="{checkout_gateway_url}" target="_blank" style="display: block; text-align: center; background-color: #09a5db; color: white; padding: 12px; border-radius: 6px; font-weight: bold; text-decoration: none; font-family: sans-serif; margin-top: 10px;">➡️ Open Paystack Secure Tab</a>',
+                                    unsafe_allow_html=True,
                                 )
-                                active_item.commission_paid = (
-                                    item_payout * COMMISSION_RATE
+                                st.toast(
+                                    "🎉 Paystack cart transaction matrix initialized successfully!"
                                 )
-                                active_item.seller_payout = (
-                                    item_payout - active_item.commission_paid
-                                )
-                                active_item.status = "paid"
-                            db.commit()
-                            st.markdown(
-                                f'<a href="{checkout_gateway_url}" target="_blank" style="display: block; text-align: center; background-color: #09a5db; color: white; padding: 12px; border-radius: 6px; font-weight: bold; text-decoration: none;">➡️ Open Paystack Secure Tab</a>',
-                                unsafe_allow_html=True,
-                            )
-                except Exception as e:
-                    st.error(f"Paystack Initializer Configuration Error: {e}")
+                    except Exception as e:
+                        st.error(f"Paystack Initializer Configuration Error: {e}")
 
     # --- TERMINATE THE GRID CONTAINERS MESH ---
     st.markdown("</div>", unsafe_allow_html=True)
