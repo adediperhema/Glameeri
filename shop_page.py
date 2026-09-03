@@ -714,7 +714,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     req_payload = {
                         "email": str(buyer_email),
                         "amount": int(cart_gross_total * 100),  # Paystack scales monetary balances cleanly into minor subunits (cents/kobo)
-                        "callback_url": "https://streamlit.io",  # Point this directly to your online deployed application URL domain
+                        "callback_url": "https://glameeri-7gvdtwau8ticpzhalezfdi.streamlit.app/",  # Point this directly to your online deployed application URL domain
                         "metadata": {
                             "custom_fields": [
                                 {
