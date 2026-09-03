@@ -20,7 +20,7 @@ from time import (
 
 @st.cache_data(ttl=60)  
 def fetch_cached_financial_metrics(_db_session, token_user_id: int):
-        try:
+    try:
         # 1. Calculate Aggregate Studio Revenue (Finalized Paid Checkouts Only)
         total_revenue_query = db_session.query(
             func.sum(Order.quantity * Order.unit_price)
