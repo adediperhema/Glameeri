@@ -159,6 +159,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     p_seller_id = prod_data["seller_id"]
                     
                     with grid_cols[i]:
+                    with grid_cols[i]:
                         # 1. Query the seller corresponding to this catalog product card
                         seller_profile = db.query(User).filter(User.id == p_seller_id).first()
                         s_name = "Glameeri Artisan Label"
