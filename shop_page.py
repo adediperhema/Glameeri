@@ -22,8 +22,8 @@ PAYSTACK_SECRET_KEY = os.getenv(
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
 
-
-def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
+@st.cache_data(ttl=180)  
+def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
 
     # -------------------------------------------------------------------
     # PART A: CORE INTERACTIVE CSS LIGHTBOX INFRASTRUCTURE
@@ -50,13 +50,13 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
     # PART B: SECURE DATA AND USAGE QUERY INITIALIZATION
     # -------------------------------------------------------------------
     active_cart_orders = (
-        db.query(Order)
+        _db.query(Order)
         .filter(Order.status == "cart", Order.buyer_id == token_user_id)
         .all()
     )
     total_cart_units = sum(int(item.quantity) for item in active_cart_orders)
 
-    buyer_record = db.query(User).filter(User.id == token_user_id).first()
+    buyer_record = _db.query(User).filter(User.id == token_user_id).first()
     buyer_email = (
         getattr(buyer_record, "email", "customer@glameeri.com")
         if buyer_record
@@ -64,7 +64,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
     )
 
     raw_meter_query = (
-        db.query(TryOnFeatureMeter)
+        _db.query(TryOnFeatureMeter)
         .filter(TryOnFeatureMeter.user_id == token_user_id)
         .first()
     )
@@ -75,7 +75,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
         db.add(new_meter_row)
         db.commit()
         raw_meter_query = (
-            db.query(TryOnFeatureMeter)
+            _db.query(TryOnFeatureMeter)
             .filter(TryOnFeatureMeter.user_id == token_user_id)
             .first()
         )
@@ -105,10 +105,10 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
         ).strip()
 
         # Build clean relational subqueries to handle multi-column index queries smoothly
-        query_builder = db.query(Product)
+        query_builder = _db.query(Product)
         if search_query:
             matching_user_ids = [
-                u.id for u in db.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
+                u.id for u in _db.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
             ]
             from sqlalchemy import or_
             query_builder = query_builder.filter(
@@ -155,7 +155,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                     
                     with grid_cols[i]:
                         # 1. Query the seller corresponding to this catalog product card
-                        seller_profile = db.query(User).filter(User.id == p_seller_id).first()
+                        seller_profile = _db.query(User).filter(User.id == p_seller_id).first()
                         s_name = "Glameeri Artisan Label"
                         s_bio = "No public studio overview logged yet."
                         s_email = "studio@glameeri.com"
