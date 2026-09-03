@@ -22,8 +22,8 @@ PAYSTACK_SECRET_KEY = os.getenv(
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
 
-@st.cache_data(ttl=180)  
-def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
+
+def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
     # -------------------------------------------------------------------
     # PART A: CORE INTERACTIVE CSS LIGHTBOX INFRASTRUCTURE
@@ -50,13 +50,13 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
     # PART B: SECURE DATA AND USAGE QUERY INITIALIZATION
     # -------------------------------------------------------------------
     active_cart_orders = (
-        _db.query(Order)
+        db.query(Order)
         .filter(Order.status == "cart", Order.buyer_id == token_user_id)
         .all()
     )
     total_cart_units = sum(int(item.quantity) for item in active_cart_orders)
 
-    buyer_record = _db.query(User).filter(User.id == token_user_id).first()
+    buyer_record = db.query(User).filter(User.id == token_user_id).first()
     buyer_email = (
         getattr(buyer_record, "email", "customer@glameeri.com")
         if buyer_record
@@ -64,7 +64,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
     )
 
     raw_meter_query = (
-        _db.query(TryOnFeatureMeter)
+        db.query(TryOnFeatureMeter)
         .filter(TryOnFeatureMeter.user_id == token_user_id)
         .first()
     )
@@ -72,10 +72,10 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
         new_meter_row = TryOnFeatureMeter(
             user_id=token_user_id, free_uses_left=5, has_premium_access=False
         )
-        _db.add(new_meter_row)
-        _db.commit()
+        db.add(new_meter_row)
+        db.commit()
         raw_meter_query = (
-            _db.query(TryOnFeatureMeter)
+            db.query(TryOnFeatureMeter)
             .filter(TryOnFeatureMeter.user_id == token_user_id)
             .first()
         )
@@ -105,10 +105,10 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
         ).strip()
 
         # Build clean relational subqueries to handle multi-column index queries smoothly
-        query_builder = _db.query(Product)
+        query_builder = db.query(Product)
         if search_query:
             matching_user_ids = [
-                u.id for u in _db.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
+                u.id for u in db.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
             ]
             from sqlalchemy import or_
             query_builder = query_builder.filter(
@@ -155,7 +155,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                     
                     with grid_cols[i]:
                         # 1. Query the seller corresponding to this catalog product card
-                        seller_profile = _db.query(User).filter(User.id == p_seller_id).first()
+                        seller_profile = db.query(User).filter(User.id == p_seller_id).first()
                         s_name = "Glameeri Artisan Label"
                         s_bio = "No public studio overview logged yet."
                         s_email = "studio@glameeri.com"
@@ -191,11 +191,11 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
 
                         # Resolve product display images cleanly
                         store_product_display_source = "https://unsplash.com"
-                        _db_img_str = prod_data["image_url_raw"].strip()
+                        db_img_str = prod_data["image_url_raw"].strip()
                         
-                        if _db_img_str:
-                            if "base64," in _db_img_str or _db_img_str.startswith("http"):
-                                store_product_display_source = _db_img_str
+                        if db_img_str:
+                            if "base64," in db_img_str or db_img_str.startswith("http"):
+                                store_product_display_source = db_img_str
                             else:
                                 STOCK_CLOTHING_GALLERY = [
                                     "https://unsplash.com",
@@ -232,8 +232,8 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                         # Standard transactional shopping button interface
                         if st.button("🛒 Append to Cart", key=f"add_cart_btn_{p_id}", width="stretch"):
                             new_cart_entry = Order(buyer_id=token_user_id, seller_id=p_seller_id, product_id=p_id, status="cart", quantity=1, unit_price=prod_data['price'])
-                            _db.add(new_cart_entry)
-                            _db.commit()
+                            db.add(new_cart_entry)
+                            db.commit()
                             st.toast(f"'{prod_data['title']}' appended to cart tray successfully!")
                             time.sleep(0.1)
                             st.rerun()
@@ -254,7 +254,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
         # --- DYNAMIC ATTACHMENT: SLIDER CONTROLS RENDERING IN AN ISOLATED FRAGMENT CANVAS ---
         target_selection_id = st.session_state.get("active_tryon_target_product_id", None)
         if target_selection_id:
-            active_fitter_product = _db.query(Product).filter(Product.id == target_selection_id).first()
+            active_fitter_product = db.query(Product).filter(Product.id == target_selection_id).first()
             if active_fitter_product:
                 
                 # ✅ FIXED: Enforce a fallback disabled check calculation in the parent block before running the canvas
@@ -298,14 +298,14 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                                     person_img = Image.open(io.BytesIO(person_file.getvalue())).convert("RGBA")
                                     
                                     safe_prod_obj = cast(Any, active_product)
-                                    raw__db_image_source: str = str(getattr(safe_prod_obj, "image_url", ""))
+                                    raw_db_image_source: str = str(getattr(safe_prod_obj, "image_url", ""))
                                     raw_garment_bytes = None
 
-                                    if raw__db_image_source.startswith("data:image"):
-                                        raw_b64_text_string: str = raw__db_image_source.split(",")
+                                    if raw_db_image_source.startswith("data:image"):
+                                        raw_b64_text_string: str = raw_db_image_source.split(",")
                                         raw_garment_bytes = base64.b64decode(raw_b64_text_string)
-                                    elif raw__db_image_source.startswith("http"):
-                                        req = urllib.request.Request(raw__db_image_source, headers={"User-Agent": "Mozilla"})
+                                    elif raw_db_image_source.startswith("http"):
+                                        req = urllib.request.Request(raw_db_image_source, headers={"User-Agent": "Mozilla"})
                                         with urllib.request.urlopen(req) as web_res:
                                             raw_garment_bytes = web_res.read()
 
@@ -371,7 +371,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
 
                                     if not has_premium:
                                         meter_row.free_uses_left = max(0, int(meter_row.free_uses_left) - 1)
-                                        _db.commit()
+                                        db.commit()
 
                                     st.session_state[f"active_tryon_render_{active_product.id}"] = final_bytes
                                     st.success("High-speed local rendering complete!")
@@ -421,7 +421,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                                     if res_data.get("status"):
                                         upgrade_gateway_url = res_data["data"]["authorization_url"]
                                         setattr(safe_meter, "has_premium_access", True)
-                                        _db.commit()
+                                        db.commit()
                                         st.markdown(f'<a href="{upgrade_gateway_url}" target="_blank" style="display: block; text-align: center; background-color: #15c39a; color: white; padding: 12px; border-radius: 6px; font-weight: bold; text-decoration: none;">➡️ Authorize Paystack Upgrade</a>', unsafe_allow_html=True)
                             except Exception as e:
                                 st.error(f"Paystack Initialize Error: {e}")
@@ -508,7 +508,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                     )
                     if new_qty != current_order.quantity:
                         current_order.quantity = new_qty
-                        _db.commit()
+                        db.commit()
                         st.rerun()
 
                 if st.button(
@@ -517,8 +517,8 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                     width="stretch",
                     type="secondary",
                 ):
-                    _db.delete(current_order)
-                    _db.commit()
+                    db.delete(current_order)
+                    db.commit()
                     st.toast("Item discarded.")
                     time.sleep(0.1)
                     st.rerun()
@@ -570,9 +570,9 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                                     item_payout - active_item.commission_paid
                                 )
                                 active_item.status = "paid"
-                            _db.commit()
+                            db.commit()
                             st.markdown(
-                                f'<a href="{checkout_gateway_url}" target="_blank" style="display: block; text-align: center; background-color: #09a5_db; color: white; padding: 12px; border-radius: 6px; font-weight: bold; text-decoration: none;">➡️ Open Paystack Secure Tab</a>',
+                                f'<a href="{checkout_gateway_url}" target="_blank" style="display: block; text-align: center; background-color: #09a5db; color: white; padding: 12px; border-radius: 6px; font-weight: bold; text-decoration: none;">➡️ Open Paystack Secure Tab</a>',
                                 unsafe_allow_html=True,
                             )
                 except Exception as e:
