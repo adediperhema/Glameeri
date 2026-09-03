@@ -696,18 +696,14 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 width="stretch",
             ):
                 # 🟢 DIAGNOSTICS CHECK: Automatically pulls and sanitizes the key string securely
-                raw_key = st.secrets.get("PAYSTACK_SECRET_KEY", os.getenv("PAYSTACK_SECRET_KEY", None))
+                # 🟢 SECURE OVERRIDE: Pointing to our brand-new, uniquely named secrets token
+                raw_key = st.secrets.get("MY_PRIVATE_PAYSTACK_KEY", None)
                 PAYSTACK_SECRET_KEY = str(raw_key).strip() if raw_key else None
                 
                 if not PAYSTACK_SECRET_KEY or PAYSTACK_SECRET_KEY == "None":
-                    # Proactively prints out every single key name currently saved in your online dashboard to help you find typos!
-                    visible_secret_keys = list(st.secrets.keys())
-                    st.error(
-                        f"❌ Paystack Configuration Error: The secret key token stream (`sk_test_...`) could not be resolved.\n\n"
-                        f"⚙️ **Active Visible Secrets Keys inside your app right now:** {visible_secret_keys}\n\n"
-                        f"Please ensure you have typed 'PAYSTACK_SECRET_KEY' in all uppercase letters at the very top of your Streamlit Cloud Secrets text pane."
-                    )
+                    st.error("❌ Configuration Error: 'MY_PRIVATE_PAYSTACK_KEY' is missing from your online Streamlit secrets pane.")
                     st.stop()
+
 
                 # If the key is resolved perfectly, the code proceeds directly to initialization channels:
                 try:
