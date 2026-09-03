@@ -338,7 +338,7 @@ def render_seller_dashboard_suite(db, token_user_id):
                         synchronized_image_string = (
                             f"data:image/jpeg;base64,{encoded_b64_stream}"
                         )
-                        st.image(raw_binary_bytes, use_container_width=True)
+                        st.image(raw_binary_bytes, width="stretch")
                 except Exception:
                     st.caption("No image template attached to listing row.")
 
