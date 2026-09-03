@@ -23,6 +23,45 @@ API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
 
 
+@st.cache_data(ttl=180)
+def fetch_cached_storefront_catalog(_db_session, search_query: str):
+    """
+    Queries your remote Supabase cluster once and saves the catalog list primitive variables 
+    in memory. Bypasses online network transmission delays completely.
+    """
+    from database import Product, User
+    from sqlalchemy import or_
+    
+    query_builder = _db_session.query(Product)
+    if search_query:
+        matching_user_ids = [
+            u.id for u in _db_session.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
+        ]
+        query_builder = query_builder.filter(
+            or_(
+                Product.seller_id.in_(matching_user_ids),
+                Product.title.ilike(f"%{search_query}%"),
+                Product.description.ilike(f"%{search_query}%"),
+                Product.notes.ilike(f"%{search_query}%")
+            )
+        )
+    
+    catalog_products = query_builder.all()
+    
+    decoupled_catalog = []
+    for item in catalog_products:
+        decoupled_catalog.append({
+            "id": int(item.id),
+            "seller_id": int(item.seller_id),
+            "title": str(item.title),
+            "price": float(item.price),
+            "description": str(item.description or "No descriptor loaded."),
+            "image_url_raw": str(item.image_url or ""),  
+            "is_fabric": bool(getattr(item, "is_fabric", False))
+        })
+    return decoupled_catalog
+    
+
 def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
     # -------------------------------------------------------------------
@@ -107,48 +146,12 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
         ).strip()
 
         # Build clean relational subqueries to handle multi-column index queries smoothly
-        query_builder = db.query(Product)
-        if search_query:
-            matching_user_ids = [
-                u.id
-                for u in db.query(User)
-                .filter(User.studio_name.ilike(f"%{search_query}%"))
-                .all()
-            ]
-            from sqlalchemy import or_
+        decoupled_catalog = fetch_cached_storefront_catalog(db, search_query)
 
-            query_builder = query_builder.filter(
-                or_(
-                    Product.seller_id.in_(matching_user_ids),
-                    Product.title.ilike(f"%{search_query}%"),
-                    Product.description.ilike(f"%{search_query}%"),
-                    Product.notes.ilike(f"%{search_query}%"),
-                )
-            )
-        catalog_products = query_builder.all()
-
-        st.markdown(
-            "<h1 style='font-size: 19px; font-weight: bold;'>🏷️ Available Studio Inventory Catalog</h1>",
-            unsafe_allow_html=True,
-        )
-        if not catalog_products:
+        st.markdown("### 🏷️ Available Studio Inventory Catalog")
+        if not decoupled_catalog:
             st.warning("No apparel assets match your criteria matrices.")
         else:
-            # =========================================================================
-            # 🔒 TUPLE DECOUPLING: STRIP INVENTORY ENTRIES INTO INDEPENDENT DATA NODES 🔒
-            # =========================================================================
-            decoupled_catalog = []
-            for item in catalog_products:
-                decoupled_catalog.append({
-                    "id": int(item.id),
-                    "seller_id": int(item.seller_id),
-                    "title": str(item.title),
-                    "price": float(item.price),
-                    "description": str(item.description or "No descriptor loaded."),
-                    "image_url_raw": str(item.image_url or ""),  
-                    "is_fabric": bool(getattr(item, "is_fabric", False))
-                })
-
             # Render catalog items cleanly distributed into 3 columns per row
             for row_idx in range(0, len(decoupled_catalog), 3):
                 grid_cols = st.columns(3, gap="medium")
