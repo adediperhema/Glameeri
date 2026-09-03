@@ -148,7 +148,10 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
         # Build clean relational subqueries to handle multi-column index queries smoothly
         decoupled_catalog = fetch_cached_storefront_catalog(db, search_query)
 
-        st.markdown("### 🏷️ Available Studio Inventory Catalog")
+        st.markdown(
+            "<h1 style='font-size: 19px; font-weight: bold;'>🏷️ Available Studio Inventory Catalog</h1>",
+            unsafe_allow_html=True,
+        )
         if not decoupled_catalog:
             st.warning("No apparel assets match your criteria matrices.")
         else:
