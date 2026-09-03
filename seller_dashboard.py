@@ -18,7 +18,7 @@ from time import (
     sleep as system_sleep,
 )  # 🔥 ALIASED STANDALONE IMPORT TO PREVENT ALL RED CONFLICTS
 
-
+@st.cache_data(ttl=60)
 def render_seller_dashboard_suite(db, token_user_id):
 
     # st.markdown("## 📈 Merchant & Shop Dashboard")
