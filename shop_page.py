@@ -688,6 +688,9 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
         # =========================================================================
         # 🛒 REAL-TIME CART CHECKOUT ACTION TRIGGER WITH LIVE DIAGNOSTICS 🛒
         # =========================================================================
+        # =========================================================================
+        # 🛒 REAL-TIME CART CHECKOUT ACTION TRIGGER WITH FRESH KEY ROUTING 🛒
+        # =========================================================================
         if total_cart_units > 0:
             if st.button(
                 "🚀 Pay with Paystack Gateway",
@@ -695,22 +698,20 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 type="primary",
                 width="stretch",
             ):
-                # 🟢 DIAGNOSTICS CHECK: Automatically pulls and sanitizes the key string securely
-                # 🟢 SECURE OVERRIDE: Pointing to our brand-new, uniquely named secrets token
-                raw_key = st.secrets.get("MY_PRIVATE_PAYSTACK_KEY", None)
+                # 🟢 FIXED: Points directly to your brand-new, uniquely cached secrets token!
+                raw_key = st.secrets.get("GLAMEERI_SECURE_PAY_KEY", None)
                 PAYSTACK_SECRET_KEY = str(raw_key).strip() if raw_key else None
                 
                 if not PAYSTACK_SECRET_KEY or PAYSTACK_SECRET_KEY == "None":
-                    st.error("❌ Configuration Error: 'MY_PRIVATE_PAYSTACK_KEY' is missing from your online Streamlit secrets pane.")
+                    st.error("❌ Configuration Error: 'GLAMEERI_SECURE_PAY_KEY' is missing from your online Streamlit secrets pane.")
                     st.stop()
 
-
-                # If the key is resolved perfectly, the code proceeds directly to initialization channels:
                 try:
                     req_payload = {
                         "email": str(buyer_email),
-                        "amount": int(cart_gross_total * 100),  # Paystack scales monetary balances cleanly into minor subunits (cents/kobo)
-                        "callback_url": "https://glameeri-7gvdtwau8ticpzhalezfdi.streamlit.app/",  # Point this directly to your online deployed application URL domain
+                        "amount": int(cart_gross_total * 100),  # Minor units (Pesewas)
+                        "currency": "GHS",  # 🟢 FIXED: Forcing your local currency solves region-lock 403 blocks!
+                        "callback_url": "https://streamlit.io",
                         "metadata": {
                             "custom_fields": [
                                 {
@@ -722,14 +723,14 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                         },
                     }
                     
-                    # Core transaction initialization endpoint setup
+                    # Ensure Bearer header has a capital 'B' and single trailing space
                     auth_header_signature = f"Bearer {PAYSTACK_SECRET_KEY}"
                     
                     req = urllib.request.Request(
                         "https://paystack.co",
                         data=json.dumps(req_payload).encode("utf-8"),
                         headers={
-                            "Authorization": auth_header_signature, # ✅ Case-sanitized token stream
+                            "Authorization": auth_header_signature,
                             "Content-Type": "application/json",
                         },
                     )
@@ -739,17 +740,14 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                         if res_data.get("status"):
                             checkout_gateway_url = res_data["data"]["authorization_url"]
                             
-                            # Process split metrics for each individual item inside the active cart orders
                             for active_item in active_cart_orders:
                                 item_payout = float(active_item.quantity * active_item.unit_price)
                                 active_item.commission_paid = float(item_payout * COMMISSION_RATE)
                                 active_item.seller_payout = float(item_payout - active_item.commission_paid)
                                 active_item.status = "paid"
                                 
-                            # Commit updates to your Supabase tables to update your seller ledger analytics charts instantly!
                             db.commit()
                             
-                            # Render a clickable, stylized gateway redirection anchor link layout block
                             st.markdown(
                                 f'<a href="{checkout_gateway_url}" target="_blank" style="display: block; text-align: center; background-color: #09a5db; color: white; padding: 12px; border-radius: 6px; font-weight: bold; text-decoration: none; font-family: sans-serif; margin-top: 10px;">➡️ Open Paystack Secure Tab</a>',
                                 unsafe_allow_html=True,
@@ -758,6 +756,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                             
                 except Exception as e:
                     st.error(f"Paystack Initializer Configuration Error: {e}")
+
 
     # --- TERMINATE THE GRID CONTAINERS MESH ---
     st.markdown("</div>", unsafe_allow_html=True)
