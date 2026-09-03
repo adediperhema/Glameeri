@@ -151,7 +151,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 })
 
             # Render catalog items cleanly distributed into 3 columns per row
-        for row_idx in range(0, len(decoupled_catalog), 3):
+            for row_idx in range(0, len(decoupled_catalog), 3):
                 grid_cols = st.columns(3, gap="medium")
                 for i, prod_data in enumerate(decoupled_catalog[row_idx : row_idx + 3]):
                     
