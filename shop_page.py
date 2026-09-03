@@ -110,7 +110,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
         
         # Build clean relational subqueries to handle multi-column index queries smoothly
-     query_builder = db.query(Product)
+        query_builder = db.query(Product)
         if search_query:
             matching_user_ids = [
                 u.id for u in db.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
