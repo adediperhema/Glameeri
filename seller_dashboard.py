@@ -11,7 +11,7 @@ from sqlalchemy import func
 from database import get_db_session
 
 # This creates a session that inherits the engine bind rules we just configured above
-_db_session = get_db_session()
+db_session = get_db_session()
 
 # Place this at the absolute top line of your seller_dashboard.py file
 from time import (
@@ -19,7 +19,7 @@ from time import (
 )  # 🔥 ALIASED STANDALONE IMPORT TO PREVENT ALL RED CONFLICTS
 
 @st.cache_data(ttl=60)  
-def fetch_cached_financial_metrics(_db_session, token_user_id: int):
+def fetch_cached_financial_metrics(db_session, token_user_id: int):
     try:
         # 1. Calculate Aggregate Studio Revenue (Finalized Paid Checkouts Only)
         total_revenue_query = db_session.query(
