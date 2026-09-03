@@ -22,8 +22,51 @@ PAYSTACK_SECRET_KEY = os.getenv(
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
 
-@st.cache_data(ttl=180)  
-def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
+
+# =========================================================================
+# 🟢 STEP 1: ISOLATED RAW DATA QUERIES (THIS CAN BE CACHED)
+# =========================================================================
+@st.cache_data(ttl=180)
+def fetch_cached_storefront_catalog(_db_session, search_query: str):
+    """
+    Queries your remote Supabase cluster once and saves the catalog list primitive variables 
+    in memory. Bypasses online network transmission delays completely.
+    """
+    from database import Product, User
+    from sqlalchemy import or_
+    
+    query_builder = _db_session.query(Product)
+    if search_query:
+        matching_user_ids = [
+            u.id for u in _db_session.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
+        ]
+        query_builder = query_builder.filter(
+            or_(
+                Product.seller_id.in_(matching_user_ids),
+                Product.title.ilike(f"%{search_query}%"),
+                Product.description.ilike(f"%{search_query}%"),
+                Product.notes.ilike(f"%{search_query}%")
+            )
+        )
+    
+    catalog_products = query_builder.all()
+    
+    decoupled_catalog = []
+    for item in catalog_products:
+        decoupled_catalog.append({
+            "id": int(item.id),
+            "seller_id": int(item.seller_id),
+            "title": str(item.title),
+            "price": float(item.price),
+            "description": str(item.description or "No descriptor loaded."),
+            "image_url_raw": str(item.image_url or ""),  
+            "is_fabric": bool(getattr(item, "is_fabric", False))
+        })
+    return decoupled_catalog
+
+
+
+def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
     # -------------------------------------------------------------------
     # PART A: CORE INTERACTIVE CSS LIGHTBOX INFRASTRUCTURE
@@ -50,13 +93,13 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
     # PART B: SECURE DATA AND USAGE QUERY INITIALIZATION
     # -------------------------------------------------------------------
     active_cart_orders = (
-        _db.query(Order)
+        db.query(Order)
         .filter(Order.status == "cart", Order.buyer_id == token_user_id)
         .all()
     )
     total_cart_units = sum(int(item.quantity) for item in active_cart_orders)
 
-    buyer_record = _db.query(User).filter(User.id == token_user_id).first()
+    buyer_record = db.query(User).filter(User.id == token_user_id).first()
     buyer_email = (
         getattr(buyer_record, "email", "customer@glameeri.com")
         if buyer_record
@@ -64,7 +107,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
     )
 
     raw_meter_query = (
-        _db.query(TryOnFeatureMeter)
+        db.query(TryOnFeatureMeter)
         .filter(TryOnFeatureMeter.user_id == token_user_id)
         .first()
     )
@@ -75,7 +118,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
         db.add(new_meter_row)
         db.commit()
         raw_meter_query = (
-            _db.query(TryOnFeatureMeter)
+            db.query(TryOnFeatureMeter)
             .filter(TryOnFeatureMeter.user_id == token_user_id)
             .first()
         )
@@ -104,47 +147,9 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
             key="global_storefront_search_field"
         ).strip()
 
+        
         # Build clean relational subqueries to handle multi-column index queries smoothly
-        query_builder = _db.query(Product)
-        if search_query:
-            matching_user_ids = [
-                u.id for u in _db.query(User).filter(User.username.ilike(f"%{search_query}%")).all()
-            ]
-            from sqlalchemy import or_
-            query_builder = query_builder.filter(
-                or_(
-                    Product.seller_id.in_(matching_user_ids),
-                    Product.title.ilike(f"%{search_query}%"),
-                    Product.description.ilike(f"%{search_query}%"),
-                    Product.notes.ilike(f"%{search_query}%")
-                )
-            )
-            
-        # Recreate the clean data parameters list variable
-        catalog_products = query_builder.all()
-
-        st.markdown(
-            "<h1 style='font-size: 19px; font-weight: bold;'>🏷️ Available Studio Inventory Catalog</h1>",
-            unsafe_allow_html=True,
-        )
-        if not catalog_products:
-            st.warning("No apparel assets match your criteria matrices.")
-        else:
-            # =========================================================================
-            # 🔒 TUPLE DECOUPLING: STRIP INVENTORY ENTRIES INTO INDEPENDENT DATA NODES 🔒
-            # =========================================================================
-            decoupled_catalog = []
-            for item in catalog_products:
-                decoupled_catalog.append({
-                    "id": int(item.id),
-                    "seller_id": int(item.seller_id),
-                    "title": str(item.title),
-                    "price": float(item.price),
-                    "description": str(item.description or "No descriptor loaded."),
-                    "image_url_raw": str(item.image_url or ""),  
-                    "is_fabric": bool(getattr(item, "is_fabric", False))
-                })
-
+            fetch_cached_storefront_catalog(_db_session, search_query)
             # Render catalog items cleanly distributed into 3 columns per row
             for row_idx in range(0, len(decoupled_catalog), 3):
                 grid_cols = st.columns(3, gap="medium")
@@ -155,7 +160,7 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                     
                     with grid_cols[i]:
                         # 1. Query the seller corresponding to this catalog product card
-                        seller_profile = _db.query(User).filter(User.id == p_seller_id).first()
+                        seller_profile = db.query(User).filter(User.id == p_seller_id).first()
                         s_name = "Glameeri Artisan Label"
                         s_bio = "No public studio overview logged yet."
                         s_email = "studio@glameeri.com"
@@ -298,14 +303,14 @@ def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
                                     person_img = Image.open(io.BytesIO(person_file.getvalue())).convert("RGBA")
                                     
                                     safe_prod_obj = cast(Any, active_product)
-                                    raw_db_image_source: str = str(getattr(safe_prod_obj, "image_url", ""))
+                                    rawdb_image_source: str = str(getattr(safe_prod_obj, "image_url", ""))
                                     raw_garment_bytes = None
 
-                                    if raw_db_image_source.startswith("data:image"):
-                                        raw_b64_text_string: str = raw_db_image_source.split(",")
+                                    if rawdb_image_source.startswith("data:image"):
+                                        raw_b64_text_string: str = rawdb_image_source.split(",")
                                         raw_garment_bytes = base64.b64decode(raw_b64_text_string)
-                                    elif raw_db_image_source.startswith("http"):
-                                        req = urllib.request.Request(raw_db_image_source, headers={"User-Agent": "Mozilla"})
+                                    elif rawdb_image_source.startswith("http"):
+                                        req = urllib.request.Request(rawdb_image_source, headers={"User-Agent": "Mozilla"})
                                         with urllib.request.urlopen(req) as web_res:
                                             raw_garment_bytes = web_res.read()
 
