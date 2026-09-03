@@ -689,7 +689,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 "🚀 Pay with Paystack Gateway",
                 key="right_panel_paystack_cta",
                 type="primary",
-                width='stretch',
+                use_container_width=True,
             ):
                 try:
                     req_payload = {
