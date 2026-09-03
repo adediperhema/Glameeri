@@ -22,7 +22,7 @@ PAYSTACK_SECRET_KEY = os.getenv(
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
 
-@st.cache_data(ttl=60)
+
 def render_marketplace_hub(_db, token_user_id, COMMISSION_RATE=0.10):
 
     # -------------------------------------------------------------------
