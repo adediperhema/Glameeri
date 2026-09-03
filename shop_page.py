@@ -22,7 +22,7 @@ PAYSTACK_SECRET_KEY = os.getenv(
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 ALLOWED_CATEGORIES = ["tops", "bottoms", "one-pieces"]
 
-
+@st.cache_data(ttl=60)
 def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
 
     # -------------------------------------------------------------------
@@ -260,6 +260,7 @@ def render_marketplace_hub(db, token_user_id, COMMISSION_RATE=0.10):
                 # ✅ FIXED: Enforce a fallback disabled check calculation in the parent block before running the canvas
                 btn_disabled_state = False if (has_premium or free_left > 0) else True
 
+                @st.cache_data(ttl=60)
                 @st.fragment
                 def render_isolated_tryon_canvas(active_product, meter_row, is_disabled_flag):
                     st.markdown(f"#### 👗 High-Speed Local Tuning Canvas: **{active_product.title}**")
