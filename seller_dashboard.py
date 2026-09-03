@@ -282,7 +282,7 @@ def render_seller_dashboard_suite(db, token_user_id):
     # 🟢 PART B: REAL-TIME DATA PROCESSING LAYER (NO SIMULATIONS) 🟢
     # =========================================================================
  
-    fetch_cached_financial_metrics(db_session, token_user_id)
+    fetch_cached_financial_metrics(db, token_user_id)
 
     # -------------------------------------------------------------------
     # PART C: COMMERCIAL SPECIFICATIONS CONFIGURATOR DRAFT BAR
