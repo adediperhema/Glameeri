@@ -1978,7 +1978,7 @@ else:
 
 # 1. Master Page Configuration Setup Gating
 st.set_page_config(
-    page_title="AfriTexile - AI Fabric & Garment Studio",
+    page_title="Glameeri AI Fabric & Garment Studio",
     page_icon="🌍",
     layout="centered",
     initial_sidebar_state="auto",
