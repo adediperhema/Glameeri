@@ -4048,7 +4048,7 @@ if st.session_state["authenticated"]:
                 st.subheader("2. Specify Outfit Silhouette Cut")
                 outfit_input = (
                     st.text_input(
-                        "Enter Target Apparel Cut Type Name (e.g., gown, jumpsuit, top, skit ,rouser, jacket) :",
+                        "Enter Target Apparel Cut Type Name (e.g., gown, jumpsuit, top, skirt ,trouser, jacket) :",
                         placeholder="e.g. gown",
                         key="step3_outfit_shape_string_input",
                     )
