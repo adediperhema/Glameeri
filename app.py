@@ -2827,7 +2827,7 @@ if st.session_state["app_view"] == "home" and not st.session_state["authenticate
         "<p style='color: var(--vk-text-muted); display: inline-block;max-width: 620px; margin: 0 auto 30px auto; font-size:15px;'>"
         "Welcome to Glameeri's integrated designer portal. Design quality African fabric and garments onto digital style assets instantly with true 3D rendering."
         "</p>"
-        f"<img src='{brand_image_render_url}' style='width: 100%; max-height: 400px; "
+        f"<img src='{brand_image_render_url}' style='width: 100%; max-height: 400px; text-align: center; "
         "object-fit: cover; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);' "
         "alt='Glameeri Active Collection Banner'/>"
         "</div>"
