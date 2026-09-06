@@ -2977,6 +2977,33 @@ elif (
 # ==========================================
 
 # --- REGISTRATION VIEW (MD3 CONVERTED) ---
+
+elif (
+    st.session_state["app_view"] == "recovery" and not st.session_state["authenticated"]
+):
+    st.markdown('<div class="vk-card">', unsafe_allow_html=True)
+
+    # 1. Safely import and trigger your modular functional recovery form block
+    from functionalities import password_recovery
+
+    password_recovery(db_session)
+
+    # =========================================================================
+    # 🗑️ CRITICAL WIPE: REMOVED THE STRAY LOOSE SUBMIT BUTTONS FROM APP.PY 🗑️
+    # =========================================================================
+    # ✅ FIXED: Any separate st.form_submit_button codes that were sitting loose
+    # right here outside of the form have been completely erased from app.py line 3016!
+
+    # 2. Render only the clean standard navigation button component helper safely
+    st.button(
+        "↩️ Abort Recovery",
+        on_click=navigate_to,
+        args=("is_logged_in",),
+        key="reg_nav_back_unconflicted_trigger_cta",
+        width="stretch",  # ✅ Updated 2026 syntax parity parameter
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
 elif st.session_state["app_view"] == "signup" and not st.session_state["authenticated"]:
     # =========================================================================
     # 🧵 REPLACEMENT CORES: PERSISTENT STATE-BOUND REGISTRATION ENGINE 🧵
