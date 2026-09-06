@@ -958,22 +958,25 @@ def pdf_byte():
 
 
 def password_recovery(db_session):
+    """
+    Handles secure account credential resets.
+    Queries the Supabase user registry table matrix and applies a SHA-256 password hash update.
+    """
+    import time
+    import hashlib
+    import streamlit as st
+    from database import User  # Verify this is mapped to your actual database structures class name
+
     st.markdown("<br/>", unsafe_allow_html=True)
     st.markdown("#### 🔑 Password Recovery Form")
 
-    # 🟢 FIXED: Safe standard form definition container with clean top-down vertical submission paths
-    with st.form(
-        key="secure_password_modification_recovery_form", clear_on_submit=True
-    ):
-        recovery_email = (
-            st.text_input(
-                "Verify Your Registered Account Email Address:",
-                placeholder="enter account@email.com",
-                key="recovery_email_input_field",
-            )
-            .strip()
-            .lower()
-        )
+    # Safe standalone vertical form definition layout container block
+    with st.form(key="secure_password_modification_recovery_form", clear_on_submit=True):
+        recovery_email = st.text_input(
+            "Verify Your Registered Account Email Address:",
+            placeholder="enter account@email.com",
+            key="recovery_email_input_field",
+        ).strip().lower()
 
         new_target_password = st.text_input(
             "Establish Your New Target Password:",
@@ -991,39 +994,30 @@ def password_recovery(db_session):
 
         st.markdown("<br/>", unsafe_allow_html=True)
 
-        # 🟢 FIXED: Stacked vertically directly inside the form block so Streamlit never loses track of the form scope!
+        # Securely stacked vertically directly inside the form block container
         execute_recovery_patch = st.form_submit_button(
             "🛡️ Authorize Password Patch", type="primary", width="stretch"
         )
+        
+        abort_recovery_patch = st.form_submit_button(
+            "↩️ Abort Recovery", width="stretch"
+        )
 
-        # abort_recovery_patch = st.form_submit_button(
-        #    "↩️ Abort Recovery", width="stretch"
-        # )
-
-    # if abort_recovery_patch:
-    #    st.session_state["display_account_recovery_form"] = False
-    #    st.rerun()
+    if abort_recovery_patch:
+        st.session_state["display_account_recovery_form"] = False
+        st.session_state["app_view"] = "is_logged_in"
+        st.rerun()
 
     if execute_recovery_patch:
         if not recovery_email or not new_target_password or not confirm_target_password:
-            st.error(
-                "❌ Submission Blocked: All parameter constraints must be fully filled out."
-            )
+            st.error("❌ Submission Blocked: All parameter constraints must be fully filled out.")
         elif new_target_password != confirm_target_password:
-            st.error(
-                "❌ Integrity Match Mismatch: Your newly chosen passwords do not match."
-            )
+            st.error("❌ Integrity Match Mismatch: Your newly chosen passwords do not match.")
         elif len(new_target_password) < 6:
-            st.error(
-                "❌ Strength Warning: Security protocol requires passwords to be at least 6 characters long."
-            )
+            st.error("❌ Strength Warning: Security protocol requires passwords to be at least 6 characters long.")
         else:
-            with st.spinner(
-                "⏳ Querying Supabase registry indices... Validating credentials matrix..."
-            ):
+            with st.spinner("⏳ Querying Supabase registry indices... Validating credentials matrix..."):
                 try:
-                    from database import User
-
                     matched_account_record = (
                         db_session.query(User)
                         .filter(User.email == recovery_email)
@@ -1031,41 +1025,28 @@ def password_recovery(db_session):
                     )
 
                     if not matched_account_record:
-                        st.error(
-                            "❌ Security Authentication Failure: Unable to verify account mapping criteria details."
-                        )
+                        st.error("❌ Security Authentication Failure: Unable to verify account mapping criteria details.")
                     else:
-                        # import hashlib
-
-                        # hashed_bytes_stream = hashlib.sha256(
-                        #    new_target_password.encode("utf-8")
-                        # ).hexdigest()
-
-                        from security import get_password_hash
-
-                        hashed_bytes_stream = get_password_hash(new_target_password)
+                        hashed_bytes_stream = hashlib.sha256(
+                            new_target_password.encode("utf-8")
+                        ).hexdigest()
 
                         setattr(
                             matched_account_record,
                             "hashed_password",
-                            str(hashed_bytes_stream),
+                            str(hashed_bytes_stream)
                         )
 
                         db_session.commit()
 
-                        st.success(
-                            "🎉 Security Authorization Successful: Your password has been updated cleanly!"
-                        )
+                        st.success("🎉 Security Authorization Successful: Your password has been updated cleanly!")
                         st.balloons()
                         time.sleep(1.5)
 
                         st.session_state["display_account_recovery_form"] = False
+                        st.session_state["app_view"] = "is_logged_in"
                         st.rerun()
 
                 except Exception as recovery_layer_crash_err:
                     db_session.rollback()
-                    st.error(
-                        f"❌ Security Recovery Pipeline Failure: {recovery_layer_crash_err}"
-                    )
-
-
+                    st.error(f"❌ Security Recovery Pipeline Failure: {recovery_layer_crash_err}")
