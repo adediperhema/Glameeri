@@ -963,7 +963,7 @@ def password_recovery(db_session):
     Queries the Supabase user registry table matrix and applies a SHA-256 password hash update.
     """
     import time
-    import hashlib
+    #import hashlib
     import streamlit as st
     from database import User  # Verify this is mapped to your actual database structures class name
 
@@ -1027,9 +1027,9 @@ def password_recovery(db_session):
                     if not matched_account_record:
                         st.error("❌ Security Authentication Failure: Unable to verify account mapping criteria details.")
                     else:
-                        hashed_bytes_stream = hashlib.sha256(
-                            new_target_password.encode("utf-8")
-                        ).hexdigest()
+                        from security import get_password_hash
+
+                        hashed_bytes_stream = get_password_hash(new_target_password)
 
                         setattr(
                             matched_account_record,
