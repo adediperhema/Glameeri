@@ -3274,7 +3274,7 @@ elif st.session_state.get("app_view") == "is_logged_in":
                                 # "🎉 Authorization signature verified via JWT! Launching canvas..."
                                 "🎉 You are successfully logging in!"
                             )
-                            st.balloons()
+                            #st.balloons()
                             db_session.close()
                             time.sleep(0.5)
                             st.rerun()
