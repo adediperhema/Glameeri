@@ -439,32 +439,39 @@ def push_to_studio(
 
 
 def collection_button(garment_cut, token_studio_name, token_user_email, db_session):
+    """
+    Saves the custom try-on canvas composition into your collection tables.
+    Bypasses router crashes by keeping the global database session channel open.
+    """
+    import time
+    import streamlit as st
+    from database import Collection, CollectionWork  # Ensure your models are imported cleanly
+
+    # 🟢 SAFETY GUARD CLOSURE GATES 🟢
+    if "local_tryon_image" not in st.session_state or st.session_state["local_tryon_image"] is None:
+        st.error("❌ Save Blocked: No active canvas design composition discovered. Generate a look first!")
+        return
+
     generated_parent_id = 0
     user_session_id_val = st.session_state.get("user_session_id", 0)
-    # db_session = SessionLocal()
+    
     try:
-        # Convert the model canvas preview into raw binary bytes
-
-        # 🔥 Dynamic inline injection bypasses top-level red imports completely
+        # Convert the model canvas preview into raw binary bytes cleanly in RAM
         sys_io_module = __import__("io")
         buffered_io = sys_io_module.BytesIO()
         st.session_state["local_tryon_image"].save(buffered_io, format="PNG")
         img_binary_payload = buffered_io.getvalue()
 
-        # Setup parent metadata variables
+        # Setup descriptive text attributes
         generated_title = f"Design - {str(garment_cut).capitalize()} Look"
         inferred_origin = "Clothing"
-        runtime_notes = (
-            "Initial composite draft saved safely into your Collection Lookbook tab."
-        )
+        runtime_notes = "Initial composite draft saved safely into your Collection Lookbook tab."
 
         # STAGE 1: COMMIT PARENT RECORD TO GENERATE PRIMARY KEY INDEX
-        from database import Collection
-
         parent_collection = Collection(
             user_id=int(user_session_id_val),
-            studio_name=token_studio_name,
-            email=token_user_email,
+            studio_name=str(token_studio_name),
+            email=str(token_user_email),
             title=generated_title,
             origin=inferred_origin,
             description=runtime_notes,
@@ -473,17 +480,14 @@ def collection_button(garment_cut, token_studio_name, token_user_email, db_sessi
         db_session.add(parent_collection)
         db_session.commit()
 
-        # 🔥 CRITICAL: Refresh the model row state to pull the real auto-increment ID
+        # Refresh the database instance state to capture the newly generated auto-increment primary key ID
         db_session.refresh(parent_collection)
 
         from typing import Any, cast
-
         safe_parent = cast(Any, parent_collection)
         generated_parent_id = int(getattr(safe_parent, "id", 0))
 
         # STAGE 2: COMMIT THE PORTFOLIO CHILD RELATION LOG LAYER
-        from database import CollectionWork
-
         new_work = CollectionWork()
         setattr(new_work, "collection_id", int(generated_parent_id))
         setattr(new_work, "user_id", int(user_session_id_val))
@@ -496,6 +500,7 @@ def collection_button(garment_cut, token_studio_name, token_user_email, db_sessi
         )
         setattr(new_work, "cached_b64_render", img_binary_payload)
 
+        # Dynamic fallback attribute parsing checks
         if hasattr(new_work, "work_title"):
             setattr(new_work, "work_title", f"Design Draft #{int(time.time())}")
         if hasattr(new_work, "work_status"):
@@ -506,16 +511,14 @@ def collection_button(garment_cut, token_studio_name, token_user_email, db_sessi
         db_session.add(new_work)
         db_session.commit()
 
-        st.toast(
-            "🎉 Success! Draft saved safely into your Collection Lookbook Portfolio!"
-        )
+        st.toast("🎉 Success! Draft saved safely into your Collection Lookbook Portfolio!")
+        #st.balloons()
 
     except Exception as err:
         db_session.rollback()
         st.error(f"Collection save pass failed: {err}")
-    finally:
-        db_session.close()
-
+    # 🟢 FIXED: The finally block has been completely stripped of db_session.close()!
+    # Keeping it open prevents breaking app.py layout pages on subsequent reruns!
 
 def open_client(garment_cut):
     # -------------------------------------------------------------------------
