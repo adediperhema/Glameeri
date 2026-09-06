@@ -4951,21 +4951,21 @@ if (
         # 💳 REWRITE: NATIVE PAYHUB GARMENT CHECKOUT INTEGRATION LAYER 💳
         # =========================================================================
         if st.button(
-            "💳 Process PayHub Customer Payment For This Attire Design",
+            "📦 Process Customer Payment For This Attire Design",
             key="step4_payhub_garment_checkout_cta",
             width="stretch",
         ):
             user_session_id_val = st.session_state.get("user_session_id", 0)
 
             st.info(
-                "⏳ Generating dynamic custom attire checkout lines. Connecting to PayHub..."
+                "⏳ Generating dynamic custom attire checkout lines. Connecting to Paystack API Infrastructure..."
             )
 
-            # FIX: Moved inside the button click context scope so it runs ONLY when pressed!
-            # Change the calling routine function reference to import your PayHub orchestration service
-            from payhub_service import create_attire_payhub_checkout_session
+            # Isolate module import streams to execute exclusively inside active click scopes
+            from paystack_service import create_attire_paystack_checkout_session
 
-            attire_payment_url = create_attire_payhub_checkout_session(
+            # Fire off the secure cloud transaction builder instance payload request
+            attire_payment_url = create_attire_paystack_checkout_session(
                 user_id=user_session_id_val,
                 client_name=current_client_title,
                 cost_usd=active_usd_base_cost,
@@ -4974,20 +4974,21 @@ if (
                 hips=c_hips,
             )
 
-            # Evaluate execution payload strings returned by your gateway network handlers
+            # Evaluate string indicators returned from the network API handler rows
             if attire_payment_url and "ERROR" in attire_payment_url:
                 st.error(attire_payment_url)
             elif attire_payment_url:
                 st.success(
-                    "🎉 PayHub checkout session compiled successfully! Route customer out to clear payments using the portal gate below:"
+                    "🎉 Paystack sandbox checkout session compiled successfully! Route client to complete payment using portal link below:"
                 )
 
-                # Render secure navigation portal buttons to forward users to your active invoice payment page
+                # ✅ FIXED: Swapped container layout properties here as well to clear deprecation warning alerts
                 st.link_button(
-                    "🚀 Proceed to PayHub Checkout",
+                    "🚀 Proceed to Paystack Checkout Gateway",
                     attire_payment_url,
                     width="stretch",
                 )
+
 
     if st.button(
         #  "↩️ Reset Studio and Build Another Variant", key="reset_studio_final_action"
