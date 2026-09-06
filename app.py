@@ -4752,15 +4752,15 @@ if (
 
     with col_life1:
         # ACTION 2: Save to your personal lookbook collection portfolio page
-        # ✅ FIXED: Swapped use_container_width=True with width="stretch" to ensure syntax compliance
         if st.button(
             "🌟 Add to Collection Lookbook Portfolio",
             key="lifecycle_add_to_collection_cta",
-            width="stretch",
+            use_container_width=True,
         ):
             collection_button(
                 garment_cut, token_studio_name, token_user_email, db_session
             )
+
 
 
     with col_life2:
