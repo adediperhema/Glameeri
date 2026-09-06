@@ -467,7 +467,7 @@ if st.session_state.get("authenticated") == True:
         )
 
     if st.sidebar.button(
-        "🔒 SIGN OUT / LOG OUT",
+        "🔒 LOG OUT",
         key="sidebar_logout_cta",
         width="stretch",
     ):
