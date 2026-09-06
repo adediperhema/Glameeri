@@ -999,14 +999,14 @@ def password_recovery(db_session):
             "🛡️ Authorize Password Patch", type="primary", width="stretch"
         )
         
-        abort_recovery_patch = st.form_submit_button(
-            "↩️ Abort Recovery", width="stretch"
-        )
+        #abort_recovery_patch = st.form_submit_button(
+        #    "↩️ Abort Recovery", width="stretch"
+        #)
 
-    if abort_recovery_patch:
-        st.session_state["display_account_recovery_form"] = False
-        st.session_state["app_view"] = "is_logged_in"
-        st.rerun()
+    #if abort_recovery_patch:
+    #    st.session_state["display_account_recovery_form"] = False
+    #    st.session_state["app_view"] = "is_logged_in"
+    #    st.rerun()
 
     if execute_recovery_patch:
         if not recovery_email or not new_target_password or not confirm_target_password:
