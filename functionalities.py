@@ -1016,7 +1016,7 @@ def password_recovery(db_session):
         elif len(new_target_password) < 6:
             st.error("❌ Strength Warning: Security protocol requires passwords to be at least 6 characters long.")
         else:
-            with st.spinner("⏳ Querying Supabase registry indices... Validating credentials matrix..."):
+            with st.spinner("⏳ Validating credentials ..."):
                 try:
                     matched_account_record = (
                         db_session.query(User)
