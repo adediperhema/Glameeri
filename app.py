@@ -4,7 +4,7 @@ import os
 import random
 import time
 from typing import Any
-from payhub_service import create_subscription_payhub_checkout_session
+from paystack_service import create_subscription_payhub_checkout_session
 
 import cv2
 import numpy as np
