@@ -978,28 +978,6 @@ if sidebar_selection == "📁 Fabric Collection Manager":
             db_session.close()
 
     st.markdown("</div>", unsafe_allow_html=True)
-
-    # ---------------------------------------------------------------------
-    # 🚀 NEW NAVIGATION BUTTON: LINKS DYNAMICALLY TO THE PORTFOLIO PAGE 🚀
-    # ---------------------------------------------------------------------
-    if st.button(
-        "👁️ View Onboarded Assets inside Lookbook Portfolio ➔",
-        key="fabric_manager_to_portfolio_redirect_cta",
-        type="secondary",
-        width="stretch",
-    ):
-        # Update the state routing target string pointer variable
-        st.session_state["active_sidebar_tab"] = "🌟 Collection Lookbook Portfolio"
-        # sidebar_selection_state_key
-
-        # Execute a clean module reload pass to force the layout view to update instantly
-        __import__("time").sleep(0.1)
-        st.rerun()
-
-    # 🔥 FIXED: Removed the stray standalone st.stop() that was freezing your script timeline!
-    # The code can now drop down naturally to evaluate the rest of your dashboard modules.
-
-    st.markdown('<div class="vk-card">', unsafe_allow_html=True)
     st.stop()
 
 
