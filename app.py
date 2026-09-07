@@ -4759,7 +4759,7 @@ if (
                 token_user_id,
                 token_studio_name,
                 token_user_email,
-                db_session
+                db_session,
             )
 
             st.markdown("</div>", unsafe_allow_html=True)
