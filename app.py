@@ -4726,35 +4726,72 @@ if (
     # -------------------------------------------------------------------------
     # LAYOUT GRID COLUMNS: HANDLES DESIGN PERSISTENCE CODES
     # -------------------------------------------------------------------------
+
+    latest_output_bytes = st.session_state.get("latest_tryon_output", None)
     col_life1, col_life2 = st.columns(2)
 
     with col_life1:
         # ACTION 2: Save to your personal lookbook collection portfolio page
+        # if st.button(
+        #    "🌟 Add to Collection Lookbook Portfolio",
+        #   key="lifecycle_add_to_collection_cta",
+        #    width="stretch",
+        # ):
+        # ---------------------------------------------------------------------
+        # PERSISTENT DOUBLE-PUMP COMMIT ACTIONS ENGINE
+        # ---------------------------------------------------------------------
+
+        # if latest_output_bytes is not None:
+        #    st.divider()
+        #    st.markdown("#### 🚀 Commerce Actions & Collection Storage Operations")
+
         if st.button(
             "🌟 Add to Collection Lookbook Portfolio",
-            key="lifecycle_add_to_collection_cta",
+            type="primary",
             use_container_width=True,
+            key="step3_double_commit_trigger",
         ):
+            latest_output_bytes = st.session_state.get("latest_tryon_output", None)
+
             collection_button(
-                garment_cut, token_studio_name, token_user_email, db_session
+                garment_cut,
+                latest_output_bytes,
+                token_user_id,
+                token_studio_name,
+                token_user_email,
+                db_session
             )
 
+            st.markdown("</div>", unsafe_allow_html=True)
+            ##########
 
+            # st.rerun()  # 🟢 FIXED: Force an immediate rerun here to render the success state instantly!
+
+    # 🟢 FIXED: Read success state directly here to display toasts and balloons 100% of the time!
+    if st.session_state.get("collection_save_success_trigger"):
+        st.toast(
+            "🎉 Success! Draft saved safely into your Collection Lookbook Portfolio!"
+        )
+        st.balloons()
+        # Reset the flag so it doesn't pop up infinitely
+        st.session_state["collection_save_success_trigger"] = False
 
     with col_life2:
         # ACTION 3: Push directly down to your dynamic commercial storefront engine
         if st.button(
             "🚀 Push to Studio Lookbook AND Shop Dashboard",
             type="primary",
-            width="stretch",
+            use_container_width=True,
             key="lifecycle_push_to_shop_cta",
         ):
             with st.spinner(
                 "Synchronizing architectural data nodes across pipelines..."
             ):
+                latest_output_bytes = st.session_state.get("latest_tryon_output", None)
 
                 push_to_studio(
                     garment_cut,
+                    latest_output_bytes,
                     token_user_id,
                     token_studio_name,
                     token_user_email,
