@@ -350,26 +350,39 @@ def render_pricing_matrix_panel(user_authenticated: bool, active_tier_str: str) 
 
 
 def push_to_studio(
-    garment_cut, token_user_id, token_studio_name, token_user_email, db_session
+    garment_cut,
+    latest_output_bytes,
+    token_user_id,
+    token_studio_name,
+    token_user_email,
+    db_session,
 ):
+
     generated_title = f"Design - {str(garment_cut).capitalize()}"
+    # inferred_origin = st.session_state.get(
+    #    "chosen_foundation", "Modern Afro-Futurism"
+    # )
     inferred_origin = "Clothing"
+    # runtime_notes = f"Custom Fitted Canvas. Mode: {category} | Source Profile: {source_mode}"
+    # runtime_notes = f"AI Custom Fitting Canvas. Mode: {category} | Cut Attributes: {outfit_input if outfit_input else 'default template'}"
     runtime_notes = "A modern customized apparel cut. Ready for retail distribution."
-    # db_session = Session(engine)
+    sys_io_module = __import__("io")
+    buffered_io = sys_io_module.BytesIO()
+    st.session_state["local_tryon_image"].save(buffered_io, format="PNG")
+    img_binary_payload = buffered_io.getvalue()
+
+    # Format image array layout seamlessly
+    import json
+
+    optimized_hex_payload = json.dumps([img_binary_payload.hex()]).encode("utf-8")
+
+    token_user_id = st.session_state.get("user_id", 1)
+    token_studio_name = st.session_state.get("studio_name", "AfriTextile Accra Hub")
+    token_user_email = st.session_state.get("user_email", "tailor@afritextile.com")
+
     # db = SessionLocal()
     try:
-        # 🔥 Dynamic inline injection bypasses top-level red imports completely
-        sys_io_module = __import__("io")
-        buffered_io = sys_io_module.BytesIO()
-        st.session_state["local_tryon_image"].save(buffered_io, format="PNG")
-        img_binary_payload = buffered_io.getvalue()
-
-        # Format image array layout seamlessly
-        import json
-
-        optimized_hex_payload = json.dumps([img_binary_payload.hex()]).encode("utf-8")
-
-        # Save to Collection parent registry
+        # Action A: Save to Interactive Portfolio Gallery Page Table
         new_collection_node = Collection(
             user_id=token_user_id,
             studio_name=token_studio_name,
@@ -380,40 +393,8 @@ def push_to_studio(
             raw_images_blob=optimized_hex_payload,
         )
         db_session.add(new_collection_node)
-        db_session.commit()
 
-        # Refresh to get tracking key to connect the collection portfolio view safely
-        db_session.refresh(new_collection_node)
-        from typing import Any, cast
-
-        # 🔥 FIXED: Explicit property inspection via casting and getattr prevents Pylance compile warnings
-        safe_collection_node = cast(Any, new_collection_node)
-        extracted_collection_id = getattr(safe_collection_node, "id", 0)
-        generated_collection_id = (
-            int(extracted_collection_id) if extracted_collection_id else 0
-        )
-
-        # Seed the child portfolio relation log layout explicitly
-        from database import CollectionWork
-
-        new_work_log = CollectionWork()
-        setattr(new_work_log, "collection_id", int(generated_collection_id))
-        setattr(new_work_log, "user_id", int(token_user_id))
-        setattr(new_work_log, "design_title", f"Shop Draft #{int(time.time())}")
-        setattr(new_work_log, "style_cut", str(garment_cut))
-        setattr(new_work_log, "cached_b64_render", img_binary_payload)
-
-        if hasattr(new_work_log, "work_title"):
-            setattr(
-                new_work_log,
-                "work_title",
-                f"Shop Draft #{int(time.time())}",
-            )
-        if hasattr(new_work_log, "work_status"):
-            setattr(new_work_log, "work_status", "draft")
-        db_session.add(new_work_log)
-
-        # Seed your User Shop Dashboard staging listings repository
+        # Action B: Save to User Shop Dashboard Staging Catalog Table
         new_dashboard_listing = DashboardProduct(
             user_id=token_user_id,
             title=generated_title,
@@ -425,96 +406,95 @@ def push_to_studio(
             is_live_in_shop=False,
         )
         db_session.add(new_dashboard_listing)
-        db_session.commit()
 
+        db_session.commit()
         st.success(
-            "🎉 Double-Commit Successful! Saved to Gallery Pages and synchronized to Shop Listing Dashboard."
+            "🎉 Success! Saved to your Interactive Gallery and sent to your User Shop Dashboard pricing console."
         )
-        st.toast("🛒 Storefront and Lookbook asset indices committed securely!")
+        st.session_state["latest_tryon_output"] = (
+            None  # Reset output cache state safely
+        )
+        import time
+
+        time.sleep(0.5)
+        st.rerun()
     except Exception as sync_err:
         db_session.rollback()
         st.error(f"Synchronization transaction rollback triggered: {sync_err}")
     finally:
         db_session.close()
 
+    st.markdown("</div>", unsafe_allow_html=True)
 
-def collection_button(garment_cut, token_studio_name, token_user_email, db_session):
-    generated_parent_id = 0
-    user_session_id_val = st.session_state.get("user_session_id", 0)
-    # db_session = SessionLocal()
+
+##########
+
+
+def collection_button(
+    garment_cut,
+    latest_output_bytes,
+    token_user_id,
+    token_studio_name,
+    token_user_email,
+    db_session,
+):
+
+    generated_title = f"Design - {str(garment_cut).capitalize()}"
+    # inferred_origin = st.session_state.get(
+    #    "chosen_foundation", "Modern Afro-Futurism"
+    # )
+    inferred_origin = "Clothing"
+    # runtime_notes = f"Custom Fitted Canvas. Mode: {category} | Source Profile: {source_mode}"
+    # runtime_notes = f"AI Custom Fitting Canvas. Mode: {category} | Cut Attributes: {outfit_input if outfit_input else 'default template'}"
+    runtime_notes = "A modern customized apparel cut. Ready for retail distribution."
+    sys_io_module = __import__("io")
+    buffered_io = sys_io_module.BytesIO()
+    st.session_state["local_tryon_image"].save(buffered_io, format="PNG")
+    img_binary_payload = buffered_io.getvalue()
+
+    # Format image array layout seamlessly
+    import json
+
+    optimized_hex_payload = json.dumps([img_binary_payload.hex()]).encode("utf-8")
+
+    token_user_id = st.session_state.get("user_id", 1)
+    token_studio_name = st.session_state.get("studio_name", "AfriTextile Accra Hub")
+    token_user_email = st.session_state.get("user_email", "tailor@afritextile.com")
+
+    # db = SessionLocal()
     try:
-        # Convert the model canvas preview into raw binary bytes
-
-        # 🔥 Dynamic inline injection bypasses top-level red imports completely
-        sys_io_module = __import__("io")
-        buffered_io = sys_io_module.BytesIO()
-        st.session_state["local_tryon_image"].save(buffered_io, format="PNG")
-        img_binary_payload = buffered_io.getvalue()
-
-        # Setup parent metadata variables
-        generated_title = f"Design - {str(garment_cut).capitalize()} Look"
-        inferred_origin = "Clothing"
-        runtime_notes = (
-            "Initial composite draft saved safely into your Collection Lookbook tab."
-        )
-
-        # STAGE 1: COMMIT PARENT RECORD TO GENERATE PRIMARY KEY INDEX
-        from database import Collection
-
-        parent_collection = Collection(
-            user_id=int(user_session_id_val),
+        # Action A: Save to Interactive Portfolio Gallery Page Table
+        new_collection_node = Collection(
+            user_id=token_user_id,
             studio_name=token_studio_name,
             email=token_user_email,
             title=generated_title,
             origin=inferred_origin,
             description=runtime_notes,
-            raw_images_blob=img_binary_payload,
+            raw_images_blob=optimized_hex_payload,
         )
-        db_session.add(parent_collection)
+        db_session.add(new_collection_node)
+
+        # Action B: Save to User Shop Dashboard Staging Catalog Table
+
         db_session.commit()
-
-        # 🔥 CRITICAL: Refresh the model row state to pull the real auto-increment ID
-        db_session.refresh(parent_collection)
-
-        from typing import Any, cast
-
-        safe_parent = cast(Any, parent_collection)
-        generated_parent_id = int(getattr(safe_parent, "id", 0))
-
-        # STAGE 2: COMMIT THE PORTFOLIO CHILD RELATION LOG LAYER
-        from database import CollectionWork
-
-        new_work = CollectionWork()
-        setattr(new_work, "collection_id", int(generated_parent_id))
-        setattr(new_work, "user_id", int(user_session_id_val))
-        setattr(new_work, "design_title", f"Design Draft #{int(time.time())}")
-        setattr(new_work, "style_cut", str(garment_cut))
-        setattr(
-            new_work,
-            "notes_annotations",
-            "Initial composite draft. Click Edit inside your Lookbook tab to modify notes or attach fabric specs.",
+        st.success(
+            "🎉 Success! Saved to your Interactive Gallery and sent to your User Shop Dashboard pricing console."
         )
-        setattr(new_work, "cached_b64_render", img_binary_payload)
-
-        if hasattr(new_work, "work_title"):
-            setattr(new_work, "work_title", f"Design Draft #{int(time.time())}")
-        if hasattr(new_work, "work_status"):
-            setattr(new_work, "work_status", "draft")
-        if hasattr(new_work, "display_order"):
-            setattr(new_work, "display_order", 0)
-
-        db_session.add(new_work)
-        db_session.commit()
-
-        st.toast(
-            "🎉 Success! Draft saved safely into your Collection Lookbook Portfolio!"
+        st.session_state["latest_tryon_output"] = (
+            None  # Reset output cache state safely
         )
+        import time
 
-    except Exception as err:
+        time.sleep(0.5)
+        st.rerun()
+    except Exception as sync_err:
         db_session.rollback()
-        st.error(f"Collection save pass failed: {err}")
+        st.error(f"Synchronization transaction rollback triggered: {sync_err}")
     finally:
         db_session.close()
+
+    st.markdown("</div>", unsafe_allow_html=True)
         
 def open_client(garment_cut):
     # -------------------------------------------------------------------------
