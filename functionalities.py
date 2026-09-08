@@ -436,7 +436,7 @@ def collection_button(
     token_user_id,
     token_studio_name,
     token_user_email,
-    db_session,
+    db_session
 ):
 
     generated_title = f"Design - {str(garment_cut).capitalize()}"
