@@ -437,7 +437,7 @@ def collection_button(
                 token_studio_name,
                 token_user_email,
                 db_session,
-            )
+            ):
 
     generated_title = f"Design - {str(garment_cut).capitalize()}"
     # inferred_origin = st.session_state.get(
