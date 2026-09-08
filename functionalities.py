@@ -431,13 +431,13 @@ def push_to_studio(
 
 
 def collection_button(
-    garment_cut,
-    latest_output_bytes,
-    token_user_id,
-    token_studio_name,
-    token_user_email,
-    db_session
-):
+                garment_cut,
+                latest_output_bytes,
+                token_user_id,
+                token_studio_name,
+                token_user_email,
+                db_session,
+            )
 
     generated_title = f"Design - {str(garment_cut).capitalize()}"
     # inferred_origin = st.session_state.get(
